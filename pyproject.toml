@@ -1,0 +1,31 @@
+[project]
+name = "fitness"
+version = "0.1.0"
+description = "AI-powered food & exercise fitness app (hexagonal, deterministic-first)"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2",
+    "pydantic-settings>=2",
+    "httpx>=0.27",
+    "anthropic>=0.40",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "httpx"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "tests"]
+testpaths = ["tests"]
+markers = [
+    "llm: tests that require a running Ollama/LLM backend (opt-in, run with: pytest -m llm)",
+]
+addopts = "-m 'not llm'"

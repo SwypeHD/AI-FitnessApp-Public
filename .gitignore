@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Test / type / lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Android build artifacts. The keystore is a signing key — keep it out of git, but
+# note that regenerating it changes the app signature, so Android will require an
+# uninstall before reinstalling.
+android/debug.keystore
+android/fittrack.apk
+android/fittrack.apk.idsig
+# Copy served for over-the-air install on the phone
+src/fitness/web/static/fittrack.apk
+
+# TLS material. The private keys must never be committed; the CA cert is
+# regenerated per machine, so the whole directory stays local.
+certs/
+android/res/raw/fittrack_ca.crt
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# App data (JSON meal logs written at runtime)
+data/
+
+# Claude Code
+.claude/
+
+# Settings (local overrides / secrets)
+settings.local.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

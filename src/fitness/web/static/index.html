@@ -1,0 +1,3594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect x='4' y='22' width='8' height='20' rx='2' fill='%23a5b4fc'/><rect x='12' y='18' width='6' height='28' rx='2' fill='%23e0e7ff'/><rect x='18' y='28' width='28' height='8' rx='2' fill='%23ffffff'/><rect x='46' y='18' width='6' height='28' rx='2' fill='%23e0e7ff'/><rect x='52' y='22' width='8' height='20' rx='2' fill='%23a5b4fc'/></svg>">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="theme-color" content="#f5f5f4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon-180.png">
+<title>AI Fitness App</title>
+<style>
+  :root {
+    --bg: #f5f5f4; --surface: #ffffff; --surface2: #fafaf9; --accent: #f0efed;
+    --primary: #6366f1; --primary-dim: #4f46e5; --text: #1c1917; --text2: #78716c;
+    --text3: #a8a29e;                     /* muted ink: captions, hints */
+    --green: #22c55e; --yellow: #eab308; --red: #ef4444; --blue: #3b82f6;
+
+    /* Categorical series colours for the macro meters. Slots 1-3 of a validated
+       order — deliberately NOT the status colours, which stay reserved for state.
+       Protein-as-red used to read as an error rather than as an identity.
+       Verified: worst adjacent CVD ΔE 9.2, normal-vision ΔE 27.6. */
+    --series-protein: #2a78d6; --series-protein-track: #cde2fb;
+    --series-carbs:   #eb6834; --series-carbs-track:   #fbdcd0;
+    --series-fat:     #1baf7a; --series-fat-track:     #c9eddd;
+
+    /* Type scale (1.25 ratio, rem) */
+    --fs-hero: 3.25rem; --fs-xl: 1.5rem; --fs-lg: 1.125rem; --fs-md: 0.95rem;
+    --fs-sm: 0.85rem; --fs-xs: 0.75rem; --fs-2xs: 0.6875rem;
+
+    /* Spacing scale */
+    --sp-1: 0.25rem; --sp-2: 0.5rem; --sp-3: 0.75rem; --sp-4: 1rem;
+    --sp-5: 1.5rem; --sp-6: 2rem; --sp-7: 3rem;
+
+    --radius: 14px; --radius-sm: 10px; --radius-xs: 7px;
+    /* Layered elevation: a hairline plus a soft ambient shadow reads as depth,
+       where a single large blur reads as a drop shadow. */
+    --shadow: 0 1px 2px rgba(28,25,23,0.04), 0 4px 12px rgba(28,25,23,0.05);
+    --shadow-soft: 0 1px 2px rgba(28,25,23,0.04);
+    --shadow-lift: 0 2px 4px rgba(28,25,23,0.05), 0 12px 28px rgba(28,25,23,0.09);
+    --border: #e7e5e4; --border-strong: #d6d3d1;
+    --ring: rgba(99,102,241,0.35);
+    --panel-width: 360px;
+  }
+  html[data-theme="dark"] {
+    --bg: #1c1917; --surface: #292524; --surface2: #211d1b; --accent: #3a3532;
+    --primary: #818cf8; --primary-dim: #6366f1; --text: #f5f5f4; --text2: #a8a29e;
+    --text3: #78716c;
+    --green: #4ade80; --yellow: #facc15; --red: #f87171; --blue: #60a5fa;
+    /* Same three hues, re-stepped for the dark surface (not an automatic flip).
+       Verified against #292524: worst adjacent CVD ΔE 9.4, normal-vision ΔE 26.5. */
+    --series-protein: #3987e5; --series-protein-track: #1c3a5c;
+    --series-carbs:   #d95926; --series-carbs-track:   #5c2e18;
+    --series-fat:     #199e70; --series-fat-track:     #14432f;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.28);
+    --shadow-soft: 0 1px 2px rgba(0,0,0,0.25);
+    --shadow-lift: 0 2px 4px rgba(0,0,0,0.3), 0 12px 28px rgba(0,0,0,0.45);
+    --border: #3a3532; --border-strong: #57534e;
+    --ring: rgba(129,140,248,0.45);
+  }
+  html { color-scheme: light; }
+  html[data-theme="dark"] { color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter var', Inter, -apple-system, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    display: flex; height: 100vh; overflow: hidden;
+    font-size: var(--fs-md); line-height: 1.5;
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    /* Optical sizing + slightly tightened tracking is most of what separates
+       "styled system font" from "default system font". */
+    letter-spacing: -0.006em;
+  }
+  /* Keyboard focus is visible everywhere; mouse clicks don't draw a ring. */
+  :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--radius-xs); }
+  button, input, select, textarea { font-family: inherit; letter-spacing: inherit; }
+  /* One focus treatment for every field. Previously only the profile and settings
+     forms had one, so the rest fell back to the browser's default outline. */
+  input:not([type="checkbox"]):not([type="radio"]):focus, select:focus, textarea:focus {
+    outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring);
+  }
+  input:not([type="checkbox"]):not([type="radio"]):hover:not(:focus),
+  select:hover:not(:focus) { border-color: var(--border-strong); }
+  input::placeholder, textarea::placeholder { color: var(--text3); }
+  select { cursor: pointer; }
+
+  /* --- NAV --- */
+  nav { width: 232px; background: var(--surface); padding: var(--sp-4) 0; display: flex; flex-direction: column; border-right: 1px solid var(--border); flex-shrink: 0; }
+  nav h1 { font-size: var(--fs-lg); padding: 0 var(--sp-4) var(--sp-5); color: var(--text);
+           letter-spacing: -0.02em; font-weight: 680; display: flex; align-items: center; gap: var(--sp-2); }
+  /* Brand mark: a small accent square instead of colouring the whole wordmark. */
+  nav h1::before { content: ""; width: 10px; height: 10px; border-radius: 3px;
+                   background: var(--primary); flex-shrink: 0; }
+  nav a { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.8rem; margin: 1px var(--sp-2);
+          color: var(--text2); text-decoration: none; font-size: var(--fs-sm); font-weight: 550;
+          transition: background 0.15s, color 0.15s; border-radius: var(--radius-sm); }
+  nav a:hover { background: var(--accent); color: var(--text); }
+  nav a.active { color: var(--primary); background: rgba(99,102,241,0.10); font-weight: 650; }
+  nav .nav-header { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: 0.09em;
+                    color: var(--text3); padding: var(--sp-5) 1.1rem var(--sp-2); font-weight: 650; }
+  nav .spacer { flex: 1; }
+  nav .date-display { padding: 0.55rem 1rem; margin: 0.3rem 0.6rem; font-size: 0.82rem; font-weight: 600; color: var(--primary); background: rgba(99,102,241,0.10); border-radius: 999px; text-align: center; letter-spacing: 0.3px; }
+  nav .theme-toggle { display: flex; align-items: center; gap: 0.6rem; padding: 0.7rem 1.2rem; margin: 0.1rem 0.6rem; color: var(--text2); background: none; border: none; font: inherit; font-size: 0.9rem; text-align: left; cursor: pointer; border-radius: 999px; transition: all 0.15s; }
+  nav .theme-toggle:hover { background: var(--accent); color: var(--text); }
+  nav .theme-toggle svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* --- MAIN CONTENT --- */
+  /* Vertical scrolling only — never pan sideways. */
+  main { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1.5rem 2rem; background: var(--bg); }
+  /* Long unbroken strings (a pasted food name, a URL) must wrap rather than widen
+     the layout, which is the usual cause of stray horizontal scroll. */
+  body { overflow-wrap: break-word; }
+  .page { display: none; }
+  .page.active { display: block; }
+  /* Page title: one per view, generous space beneath it. */
+  h2 { font-size: var(--fs-xl); margin-bottom: var(--sp-5); font-weight: 650; color: var(--text); letter-spacing: -0.022em; }
+  /* Section label: small caps-ish eyebrow that separates bands of content. */
+  h3 { font-size: var(--fs-2xs); margin-bottom: var(--sp-3); color: var(--text2);
+       text-transform: uppercase; letter-spacing: 0.09em; font-weight: 650; }
+  h4 { font-size: var(--fs-sm); font-weight: 600; color: var(--text); }
+
+  /* Surfaces. One card treatment, used everywhere, so panels stop looking ad hoc. */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+          box-shadow: var(--shadow-soft); padding: var(--sp-4); }
+
+  /* Numbers that sit in columns line up; standalone display numbers do not
+     (tabular figures make a hero number look loose). */
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+  /* --- DASHBOARD --- */
+  /* Hero figure: the one number the view leads with. Ink-coloured, not status-
+     coloured — green made every total read as "good" regardless of the target.
+     Proportional (not tabular) figures, so large digits stay tightly set. */
+  .cal-hero { padding: var(--sp-6) var(--sp-5); background: var(--surface); border-radius: var(--radius);
+              box-shadow: var(--shadow); margin-bottom: var(--sp-4); border: 1px solid var(--border);
+              display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); }
+  .cal-hero .number { font-size: var(--fs-hero); font-weight: 680; color: var(--text);
+                      letter-spacing: -0.04em; line-height: 1; }
+  .cal-hero .label { font-size: var(--fs-xs); color: var(--text2); text-transform: uppercase;
+                     letter-spacing: 0.09em; font-weight: 600; }
+  .cal-hero .hero-meta { font-size: var(--fs-sm); color: var(--text2); margin-top: var(--sp-2);
+                         font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  .cal-hero .hero-meta b { color: var(--text); font-weight: 650; }
+  /* Meter against the daily target. Severity is carried by the fill: on track,
+     approaching the target, then over it. */
+  .cal-hero .hero-track { width: min(320px, 100%); height: 6px; border-radius: 999px;
+                          background: var(--accent); margin-top: var(--sp-3); overflow: hidden; }
+  .cal-hero .hero-track-fill { height: 100%; border-radius: 999px; background: var(--primary);
+                               transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1); }
+  .cal-hero .hero-track-fill.near { background: var(--yellow); }
+  .cal-hero .hero-track-fill.over { background: var(--red); }
+
+  .macro-bars { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); margin-bottom: var(--sp-5); }
+  .macro-card { background: var(--surface); padding: var(--sp-4); border-radius: var(--radius);
+                box-shadow: var(--shadow-soft); border: 1px solid var(--border); }
+  /* Identity comes from the swatch beside the name, never from colouring the text. */
+  .macro-card .macro-name { display: flex; align-items: center; gap: var(--sp-2);
+                            font-size: var(--fs-xs); color: var(--text2); font-weight: 600;
+                            text-transform: uppercase; letter-spacing: 0.07em; }
+  .macro-card .macro-name::before { content: ""; width: 8px; height: 8px; border-radius: 50%;
+                                    background: var(--macro-hue); flex-shrink: 0; }
+  .macro-card .value { font-size: var(--fs-xl); font-weight: 650; color: var(--text);
+                       letter-spacing: -0.02em; margin-top: var(--sp-2); }
+  .macro-card .value .unit { font-size: var(--fs-sm); font-weight: 550; color: var(--text2); margin-left: 1px; }
+  /* Meter: the unfilled track is a lighter step of the fill's own hue, so state
+     reads across the whole bar rather than only where it's filled. */
+  .macro-card .bar-bg { height: 6px; background: var(--macro-track); border-radius: 999px;
+                        margin-top: var(--sp-3); overflow: hidden; }
+  .macro-card .bar-fill { height: 100%; border-radius: 999px; background: var(--macro-hue);
+                          transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1); }
+  .macro-card.protein { --macro-hue: var(--series-protein); --macro-track: var(--series-protein-track); }
+  .macro-card.carbs   { --macro-hue: var(--series-carbs);   --macro-track: var(--series-carbs-track); }
+  .macro-card.fat     { --macro-hue: var(--series-fat);     --macro-track: var(--series-fat-track); }
+  .slot-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+  .slot-card { background: var(--surface); border-radius: var(--radius); padding: 1.1rem; box-shadow: var(--shadow-soft); border: 1px solid var(--border); }
+  .slot-card .slot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+  .slot-card .slot-header h3 { margin: 0; }
+  /* A meal total is a quantity, not a state — green made every meal read as
+     "good". Ink, with tabular figures so the column of totals aligns. */
+  .slot-card .slot-cals { color: var(--text); font-weight: 650; font-size: var(--fs-sm);
+    font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  .slot-card .food-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+  .slot-card .food-item:last-child { border-bottom: none; }
+  .slot-card .food-macros { color: var(--text2); font-size: 0.8rem; }
+  /* Designed empty state rather than italic grey text, which reads unfinished. */
+  .empty-slot { color: var(--text3); font-size: var(--fs-sm); text-align: center;
+                padding: var(--sp-4) var(--sp-3); border: 1px dashed var(--border-strong);
+                border-radius: var(--radius-sm); background: var(--surface2); }
+
+  /* --- FOOD LOG --- */
+  .log-slot { background: var(--surface); border-radius: var(--radius); padding: 1.1rem; margin-bottom: 1rem; box-shadow: var(--shadow-soft); border: 1px solid var(--border); transition: outline 0.15s, background 0.15s; }
+  .log-slot.drop-target { outline: 2px solid var(--blue); background: rgba(59,130,246,0.06); }
+  .food-row { display: flex; align-items: center; padding: 0.7rem 0; border-bottom: 1px solid var(--border); }
+  .food-row:last-child { border-bottom: none; }
+  .food-row.dragging { opacity: 0.4; }
+  .drag-handle { cursor: grab; color: var(--text2); margin-right: 0.6rem; font-size: 1rem; user-select: none; flex-shrink: 0; }
+  .drag-handle:active { cursor: grabbing; }
+  .food-info { flex: 1; }
+  .food-name { font-weight: 600; }
+  .food-detail { display: flex; gap: 0.35rem; margin-top: 0.35rem; flex-wrap: wrap; align-items: center; }
+  .food-qty { color: var(--text2); font-size: 0.78rem; margin-right: 0.2rem; }
+  /* Macro chips sit four-to-a-row in a dense list, so they're uniform and quiet:
+     the P/C/F letter carries identity (a label, not a colour), numbers are tabular
+     so they line up down the column, and no chip shouts louder than its neighbour. */
+  .macro-pill { display: inline-flex; align-items: center; gap: 0.25rem;
+                padding: 0.15rem 0.5rem; border-radius: var(--radius-xs);
+                font-size: var(--fs-2xs); font-weight: 600; color: var(--text2);
+                background: var(--surface2); border: 1px solid var(--border);
+                font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  .macro-pill.cal { color: var(--text); font-weight: 650; }
+  .food-actions { display: flex; gap: 0.4rem; }
+  /* Buttons: one shared geometry, variants differ only in colour. */
+  .btn, .btn-outline, .btn-success {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+    border: 1px solid transparent; padding: 0.45rem 0.9rem; border-radius: 999px;
+    cursor: pointer; font-size: var(--fs-sm); font-weight: 600; line-height: 1.2;
+    white-space: nowrap; transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.08s;
+  }
+  .btn:active, .btn-outline:active, .btn-success:active { transform: scale(0.975); }
+  .btn:disabled, .btn-outline:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  /* Destructive was tinted indigo with red text — a leftover from the palette swap. */
+  .btn-danger { background: rgba(239,68,68,0.10); color: var(--red); }
+  .btn-danger:hover { background: rgba(239,68,68,0.18); }
+  .btn-primary { background: var(--primary); color: #fff; padding: 0.55rem 1.2rem; box-shadow: var(--shadow-soft); }
+  .btn-primary:hover { background: var(--primary-dim); }
+
+  /* --- DATE NAV --- */
+  /* Symmetric 1fr / auto / 1fr: the date sits on the true centre line, with the
+     picker and Today pinned right. Previously all three right-hand controls
+     crowded one side, so the date was only centred in the leftovers. */
+  /* Two rows: the date and its arrows centred on their own line, the picker and
+     Today as secondary controls beneath. Keeping all five on one row can't put
+     the date on the centre line — the group is wide enough that the forward
+     arrow lands under the picker — and every single-row variant either pushed
+     the date off-centre or overlapped. Splitting them also reads as a clearer
+     hierarchy: primary navigation first, jump-to controls second. */
+  .date-nav { display: flex; flex-direction: column; align-items: center;
+              gap: var(--sp-2); margin-bottom: var(--sp-5); }
+  .date-nav .date-nav-main { display: flex; align-items: center; justify-content: center;
+                             gap: var(--sp-3); }
+  .date-nav .date-nav-aux { display: flex; align-items: center; justify-content: center;
+                            gap: var(--sp-2); }
+  .date-nav .nav-arrow { background: var(--surface); border: 1px solid var(--border); color: var(--text); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-soft); transition: all 0.15s; }
+  .date-nav .nav-arrow:hover { border-color: var(--primary); color: var(--primary); }
+  /* flex:1 + nowrap keeps the arrows anchored and stops a long weekday ("Wednesday")
+     from wrapping and shoving the "Today" tag onto a second line. */
+  /* A stable width stops the arrows sliding as the weekday name changes length. */
+  .date-nav .date-label { font-weight: 650; font-size: var(--fs-lg); text-align: center;
+    letter-spacing: -0.015em; min-width: min(15rem, 58vw); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; }
+  /* "Today" as a badge rather than loose coloured text beside the date. */
+  .date-nav .date-label .today-tag { display: inline-block; font-size: var(--fs-2xs); color: var(--primary);
+    background: rgba(99,102,241,0.10); font-weight: 650; margin-left: var(--sp-2);
+    padding: 0.1rem 0.45rem; border-radius: 999px; letter-spacing: 0.04em;
+    text-transform: uppercase; vertical-align: 0.15em; white-space: nowrap; }
+  .date-nav input[type="date"] { background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; color: var(--text); padding: 0.35rem 0.7rem; font-size: 0.8rem; cursor: pointer; }
+  .date-nav input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.4) opacity(0.6); cursor: pointer; }
+  .date-nav .today-btn { background: transparent; border: 1px solid var(--border-strong); color: var(--text2); padding: 0.35rem 0.8rem; border-radius: 999px; cursor: pointer; font-size: 0.75rem; transition: all 0.15s; }
+  .date-nav .today-btn:hover { border-color: var(--green); color: var(--green); }
+
+  /* --- EXERCISE --- */
+  .exercise-item { background: var(--surface2); border-radius: var(--radius-sm); padding: 0.8rem 1rem; margin-bottom: 0.5rem; border: 1px solid var(--border); }
+  .exercise-item .ex-header { display: flex; justify-content: space-between; align-items: center; }
+  .exercise-item .ex-name { font-weight: 600; font-size: 0.95rem; }
+  .exercise-item .ex-type { color: var(--text2); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .exercise-item .ex-action { background: var(--surface); border: 1px solid var(--border); color: var(--text2); cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem; transition: border-color 0.15s, color 0.15s, background 0.15s; }
+  .exercise-item .ex-action:hover { border-color: var(--border-strong); color: var(--text); background: var(--surface); }
+  .exercise-item .ex-action.ex-delete:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.08); }
+  .exercise-item .ex-sets { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
+  .exercise-item .ex-dur { color: var(--text2); font-size: 0.8rem; margin-top: 0.3rem; }
+  .set-pill { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.7rem; border-radius: 999px; font-size: 0.8rem; background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.15); color: var(--text); }
+  .set-pill .set-label { color: var(--text2); font-size: 0.7rem; }
+  .set-pill .set-val { font-weight: 600; }
+  .exercise-meta { color: var(--text2); font-size: 0.85rem; }
+  .exercise-form { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
+  .exercise-form input, .exercise-form select { padding: 0.55rem 0.7rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 0.85rem; }
+  .exercise-form .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .exercise-form .full-width { width: 100%; }
+  .set-row { display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 0.4rem; align-items: center; }
+  .set-row .set-num { color: var(--text2); font-size: 0.8rem; font-weight: 600; min-width: 1.5rem; text-align: center; }
+  .set-row input { padding: 0.45rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 0.85rem; }
+  /* Static unit caption inside the field, so it's clear which box is which.
+     pointer-events:none keeps it uneditable and click-through to the input. */
+  .field-unit { position: relative; display: flex; min-width: 0; }
+  .field-unit input { width: 100%; padding-right: 2.7rem; }
+  .field-unit .unit-cap { position: absolute; right: 0.55rem; top: 50%; transform: translateY(-50%);
+    font-size: 0.7rem; font-weight: 600; color: var(--text2); pointer-events: none; user-select: none; }
+  .set-row .remove-set { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 1rem; padding: 0 0.3rem; }
+  .set-row .remove-set:hover { color: #ef4444; }
+  #setList { margin-bottom: 0.3rem; }
+  .add-set-btn { background: none; border: 1px dashed var(--border-strong); color: var(--text2); padding: 0.4rem; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.8rem; }
+  .add-set-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* --- AI PANEL (right sidebar) --- */
+  .ai-panel { width: var(--panel-width); background: var(--bg); display: flex; flex-direction: column; flex-shrink: 0; padding: 0.6rem; }
+  .ai-panel-inner { flex: 1; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .ai-panel-header { padding: 1rem 1.2rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem; background: var(--surface); }
+  .ai-panel-header h2 { margin: 0; font-size: 1rem; font-weight: 700; }
+  .ai-panel-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; transition: background 0.3s; position: relative; cursor: default; }
+  .ai-panel-dot.connected { background: var(--green); }
+  .ai-tooltip { position: fixed; background: #292524; color: #fafaf9; font-size: 0.72rem; padding: 0.35rem 0.7rem; border-radius: 8px; white-space: nowrap; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); pointer-events: none; z-index: 9999; transition: opacity 0.15s; opacity: 0; }
+  .ai-tooltip.visible { opacity: 1; }
+
+  .ai-messages { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; background: var(--surface2); }
+  .ai-msg { max-width: 82%; padding: 0.65rem 1rem; border-radius: 1.15rem; line-height: 1.45; font-size: 0.85rem; white-space: pre-wrap; word-wrap: break-word; box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+  .ai-msg-user { align-self: flex-end; background: linear-gradient(135deg, var(--primary), var(--primary-dim)); color: #fff; border-bottom-right-radius: 0.35rem; }
+  .ai-msg-bot { align-self: flex-start; background: var(--surface); color: var(--text); border-bottom-left-radius: 0.35rem; border: 1px solid var(--border); }
+  .ai-msg-note { font-size: 0.78rem; color: var(--text2); align-self: center; padding: 0.2rem 0.6rem; box-shadow: none; background: transparent; }
+  .ai-msg-system { font-size: 0.78rem; color: var(--green); align-self: center; padding: 0.2rem 0.6rem; box-shadow: none; background: transparent; }
+
+  /* Thinking indicator */
+  .ai-thinking { align-self: flex-start; display: none; padding: 0.6rem 1rem; }
+  .ai-thinking.visible { display: flex; }
+  .ai-thinking-dots { display: flex; gap: 4px; align-items: center; background: var(--surface); border: 1px solid var(--border); padding: 0.5rem 0.8rem; border-radius: 999px; }
+  .ai-thinking-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); opacity: 0.5; animation: think-pulse 1.4s ease-in-out infinite; }
+  .ai-thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .ai-thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes think-pulse {
+    0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+    30% { opacity: 1; transform: scale(1); }
+  }
+  .ai-thinking-label { font-size: 0.78rem; color: var(--text2); margin-left: 8px; }
+
+  .ai-input-area { padding: 0.8rem; border-top: 1px solid var(--border); background: var(--surface); }
+  .ai-input-bar { display: flex; gap: 0.5rem; }
+  .ai-input-bar input { flex: 1; padding: 0.7rem 1rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; color: var(--text); font-size: 0.85rem; }
+  .ai-input-bar input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+  .ai-input-bar button { flex-shrink: 0; }
+  .ai-hint { font-size: 0.72rem; color: var(--text2); margin-top: 0.4rem; padding: 0 0.2rem; }
+
+  /* --- CALENDAR --- */
+  .calendar-controls { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+  .calendar-controls select { padding: 0.5rem 0.7rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 0.85rem; }
+  .calendar-actions { display: flex; gap: 0.5rem; margin-left: auto; }
+  .btn-outline { border: 1px solid var(--border-strong); background: transparent; color: var(--text2); padding: 0.45rem 0.9rem; border-radius: 999px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.15s; }
+  .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-success { background: rgba(34,197,94,0.14); color: var(--green); border: none; padding: 0.45rem 0.9rem; border-radius: 999px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
+  .btn-success:hover { background: rgba(34,197,94,0.28); }
+  .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.6rem; margin-bottom: 1.5rem; }
+  .day-card { background: var(--surface); border-radius: var(--radius); padding: 0.9rem; min-height: 120px; border: 1px solid var(--border); box-shadow: var(--shadow-soft); transition: all 0.15s; cursor: pointer; }
+  .day-card:hover { border-color: var(--border-strong); transform: translateY(-1px); box-shadow: var(--shadow); }
+  .day-card.today { border-color: var(--primary); }
+  .day-card.selected { border-color: var(--primary); background: rgba(99,102,241,0.06); }
+  .day-card.rest { opacity: 0.5; }
+  .day-card.completed { border-color: var(--green); }
+  .day-card.skipped { opacity: 0.4; }
+  .day-card.empty { background: transparent; border: 1px dashed var(--border-strong); box-shadow: none; opacity: 0.4; cursor: default; min-height: 80px; }
+  .day-card.empty:hover { border-color: var(--border-strong); transform: none; box-shadow: none; }
+  .calendar-nav .nav-arrow { background: var(--surface); border: 1px solid var(--border); color: var(--text); width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-soft); transition: all 0.15s; }
+  .calendar-nav .nav-arrow:hover { border-color: var(--primary); color: var(--primary); }
+  .calendar-nav .today-btn { background: transparent; border: 1px solid var(--border-strong); color: var(--text2); padding: 0.35rem 0.7rem; border-radius: 999px; cursor: pointer; font-size: 0.75rem; transition: all 0.15s; }
+  .calendar-nav .today-btn:hover { border-color: var(--green); color: var(--green); }
+  .day-card .day-date { font-size: 0.75rem; color: var(--text2); margin-bottom: 0.3rem; }
+  .day-card .day-label { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; }
+  .day-card .day-label.rest-label { color: var(--text2); font-style: italic; }
+  .day-card .day-exercises { font-size: 0.75rem; color: var(--text2); line-height: 1.5; }
+  .day-card .day-status { font-size: 0.7rem; margin-top: 0.4rem; font-weight: 700; }
+  .day-card .day-status.completed { color: var(--green); }
+  .day-card .day-status.skipped { color: var(--yellow); }
+  .today-workout { background: var(--surface); border-radius: var(--radius); padding: 1.2rem; margin-bottom: 1rem; box-shadow: var(--shadow-soft); border: 1px solid var(--border); border-left: 4px solid var(--primary); }
+  .today-workout h3 { margin-bottom: 0.8rem; color: var(--primary); }
+  .today-exercise { display: flex; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+  .today-exercise:last-child { border-bottom: none; }
+  .today-exercise .ex-name { flex: 1; }
+  /* Status reads from a labelled badge, not an emoji plus coloured text. Colour
+     is reinforced by the "n/m sets" label, so it never carries state alone. */
+  .today-exercise .ex-status { width: 5.5rem; text-align: center; font-size: var(--fs-2xs);
+    font-weight: 650; padding: 0.12rem 0.4rem; border-radius: 999px;
+    font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  .today-exercise .ex-status.is-done { color: var(--green); background: rgba(34,197,94,0.12); }
+  .today-exercise .ex-status.is-partial { color: var(--text2); background: var(--surface2); }
+  .today-exercise .sets-reps { width: 3.5rem; text-align: right; color: var(--text3);
+    font-size: var(--fs-xs); font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  .no-plan { text-align: center; padding: 3rem; color: var(--text2); }
+  .no-plan h3 { color: var(--text); margin-bottom: 1rem; }
+  .plan-picker { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem; }
+  .plan-btn { padding: 0.6rem 1.3rem; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 999px; color: var(--text); cursor: pointer; font-size: 0.9rem; font-weight: 600; box-shadow: var(--shadow-soft); transition: all 0.15s; }
+  .plan-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .plan-builder { text-align: left; max-width: 600px; margin: 0 auto; }
+  .plan-builder input, .plan-builder select { padding: 0.45rem 0.6rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 0.85rem; }
+  .plan-day-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem; margin-bottom: 0.6rem; box-shadow: var(--shadow-soft); transition: opacity 0.15s; }
+  .plan-day-card.dragging { opacity: 0.4; }
+  .drag-handle { cursor: grab; color: var(--text2); font-size: 1rem; user-select: none; padding: 0 0.2rem; }
+  .plan-day-card .day-header { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; }
+  .plan-day-card .day-header input { flex: 1; }
+  .plan-day-ex { display: flex; gap: 0.4rem; align-items: center; margin-bottom: 0.3rem; }
+  .plan-day-ex input { flex: 1; }
+  .plan-day-ex input.narrow { max-width: 60px; flex: none; }
+
+  /* --- PROFILE & SETTINGS --- */
+  .profile-section { background: var(--surface); border-radius: var(--radius); padding: 1.6rem; margin-bottom: 1rem; max-width: 600px; box-shadow: var(--shadow-soft); border: 1px solid var(--border); }
+  .profile-grid { display: grid; grid-template-columns: 130px 1fr; gap: 0.7rem; align-items: center; }
+  .profile-grid label { font-size: 0.9rem; color: var(--text2); }
+  .profile-grid input, .profile-grid select, .profile-grid textarea { padding: 0.55rem 0.7rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 0.9rem; }
+  .profile-grid input:focus, .profile-grid select:focus, .profile-grid textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+  .profile-grid select { appearance: none; -webkit-appearance: none; cursor: pointer; }
+  .profile-grid textarea { resize: vertical; min-height: 60px; grid-column: 1 / -1; }
+  .settings-grid { display: grid; grid-template-columns: 130px 1fr; gap: 0.7rem; align-items: center; }
+  .settings-grid label { font-size: 0.9rem; color: var(--text2); }
+  .settings-grid input, .settings-grid select { padding: 0.55rem 0.7rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 0.9rem; }
+  .settings-grid input:focus, .settings-grid select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+
+  /* --- SAVED MEALS --- */
+  .saved-meals-list { display: grid; gap: 0.8rem; margin-bottom: 1.5rem; }
+  .saved-meal-card { background: var(--surface); border-radius: var(--radius); padding: 1.1rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; box-shadow: var(--shadow-soft); border: 1px solid var(--border); }
+  .saved-meal-info h4 { margin: 0 0 0.3rem; font-size: 1rem; }
+  .saved-meal-items { font-size: 0.82rem; color: var(--text2); line-height: 1.5; }
+  .saved-meal-macros { display: flex; gap: 0.4rem; margin-top: 0.4rem; flex-wrap: wrap; }
+  .saved-meal-actions { display: flex; gap: 0.4rem; flex-shrink: 0; align-items: flex-start; }
+  .saved-meal-actions select { padding: 0.35rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 0.78rem; }
+  .create-meal-form { background: var(--surface); border-radius: var(--radius); padding: 1.3rem; max-width: 600px; box-shadow: var(--shadow-soft); border: 1px solid var(--border); }
+  .create-meal-form h3 { margin-bottom: 0.8rem; }
+  .ingredient-header { display: flex; gap: 0.4rem; align-items: center; margin-bottom: 0.3rem; }
+  .ingredient-header span { font-size: 0.72rem; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+  .ingredient-header .ing-header-name { flex: 2; }
+  .ingredient-header .ing-header-narrow { width: 70px; flex-shrink: 0; text-align: center; }
+  .ingredient-row { display: flex; gap: 0.4rem; align-items: center; margin-bottom: 0.4rem; }
+  .ingredient-row input { padding: 0.45rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 0.82rem; }
+  .ingredient-row input.narrow { width: 70px; max-width: 70px; flex-shrink: 0; }
+  .ingredient-row button { flex-shrink: 0; }
+  .search-results { position: absolute; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 150px; overflow-y: auto; z-index: 10; font-size: 0.82rem; box-shadow: var(--shadow); }
+  .search-results div { padding: 0.5rem 0.8rem; cursor: pointer; }
+  .search-results div:hover { background: var(--accent); }
+  .search-wrap { position: relative; flex: 2; }
+  .search-wrap input { width: 100%; }
+
+  /* --- UNDO TOAST --- */
+  /* Inverted pill: text-on-bg swapped, so it stays legible in both themes. */
+  .undo-toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--text); border: 1px solid var(--text); border-radius: 999px; padding: 0.7rem 1.2rem; display: flex; align-items: center; gap: 0.8rem; font-size: 0.9rem; color: var(--bg); box-shadow: 0 8px 28px rgba(0,0,0,0.25); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .undo-toast.visible { opacity: 1; pointer-events: auto; }
+  .undo-toast button { background: var(--primary); color: #fff; border: none; padding: 0.35rem 0.9rem; border-radius: 999px; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+
+  /* --- NOTIFY BANNER --- */
+  .notify-banner { position: fixed; top: 1rem; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 0.6rem 1.3rem; font-size: 0.85rem; box-shadow: var(--shadow); z-index: 101; opacity: 0; pointer-events: none; transition: opacity 0.2s; color: var(--text); }
+  .notify-banner.visible { opacity: 1; pointer-events: auto; }
+
+  /* Persistent offline state (server unreachable) — a state, not an event, so it stays up. */
+  /* translateY(-100%) alone left a hairline of colour on screen when the height
+     landed on a fractional pixel, so the hidden banner showed as a faint yellow
+     line across the top. visibility takes it out entirely, delayed so the
+     slide-out still animates. */
+  .offline-banner { position: fixed; top: 0; left: 0; right: 0; background: var(--yellow);
+    color: #1c1917; font-size: var(--fs-sm); font-weight: 600; text-align: center;
+    letter-spacing: 0.01em; padding: calc(0.45rem + env(safe-area-inset-top)) 1rem 0.45rem;
+    z-index: 200; transform: translateY(-101%); visibility: hidden; pointer-events: none;
+    transition: transform 0.2s ease, visibility 0s linear 0.2s; }
+  .offline-banner.visible { transform: translateY(0); visibility: visible; pointer-events: auto;
+    transition: transform 0.2s ease, visibility 0s linear 0s; }
+
+  /* --- MOBILE / PWA --- */
+
+  /* Prevent iOS zoom on input focus — inputs must be >= 16px */
+  input, select, textarea { font-size: max(16px, 0.85rem); }
+
+  /* Smooth momentum scrolling on touch */
+  main, .ai-messages { -webkit-overflow-scrolling: touch; }
+  /* Keep overscroll inside the pane: stops the WebView's own pull-to-refresh and
+     glow from competing with the elastic bounce added in JS. */
+  main, .ai-messages { overscroll-behavior-y: contain; }
+
+  /* Disable hover effects on touch-only devices */
+  @media (hover: none) {
+    nav a:hover { background: transparent; color: var(--text2); }
+    nav a.active:hover { color: var(--primary); background: rgba(99,102,241,0.12); }
+    .btn-danger:hover { background: rgba(99,102,241,0.14); }
+    .btn-primary:hover { background: var(--primary); }
+    .btn-outline:hover { border-color: var(--border-strong); color: var(--text2); }
+    .btn-success:hover { background: rgba(34,197,94,0.14); }
+    .day-card:hover { border-color: var(--border); transform: none; box-shadow: var(--shadow-soft); }
+    .day-card.today:hover { border-color: var(--primary); }
+    .day-card.selected:hover { border-color: var(--primary); }
+    .day-card.completed:hover { border-color: var(--green); }
+    .date-nav .nav-arrow:hover { border-color: var(--border); color: var(--text); }
+    .date-nav .date-label { min-width: 0; }
+    .date-nav .today-btn:hover { border-color: var(--border-strong); color: var(--text2); }
+    .plan-btn:hover { border-color: var(--border-strong); color: var(--text); }
+    .add-set-btn:hover { border-color: var(--border-strong); color: var(--text2); }
+    .calendar-nav .nav-arrow:hover { border-color: var(--border); color: var(--text); }
+    .calendar-nav .today-btn:hover { border-color: var(--border-strong); color: var(--text2); }
+    .set-row .remove-set:hover { color: var(--text2); }
+    .search-results div:hover { background: transparent; }
+  }
+
+  /* Hidden on desktop, shown on mobile */
+  .mobile-header, .mobile-bottom-bar, .mobile-backdrop, .mobile-settings-menu, .mobile-chat-fab { display: none; }
+  .mobile-chat-close {
+    display: none; align-items: center; justify-content: center;
+    background: none; border: none; color: var(--text);
+    font-size: 1.5rem; min-width: 44px; min-height: 44px;
+    cursor: pointer; margin-left: auto; border-radius: 50%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ---- Mobile breakpoint: bottom tab bar + white/light ---- */
+  @media (max-width: 768px) {
+    :root { --bg: #f5f5f4; --surface: #ffffff; --surface2: #fafaf9; }
+    body { flex-direction: column; height: 100vh; height: 100dvh; background: var(--bg); }
+
+    /* Hide desktop nav */
+    nav { display: none !important; }
+
+    /* Mobile top bar: settings gear left, title center */
+    /* The safe-area inset has to ADD to the bar, not eat into it. With
+       border-box, a fixed 52px height minus a notch inset left too little room
+       for the 40px buttons, so the gear collided with the bottom border. */
+    .mobile-header {
+      display: flex; align-items: center; gap: 0.25rem;
+      min-height: calc(54px + env(safe-area-inset-top)); height: auto;
+      padding: calc(env(safe-area-inset-top) + 7px) 0.6rem 7px;
+      background: var(--surface); flex-shrink: 0; z-index: 50;
+      border-bottom: 1px solid var(--border);
+    }
+    .mobile-header .mobile-title {
+      flex: 1; font-size: 1.05rem; font-weight: 700;
+      color: var(--text); text-align: center; letter-spacing: 0.3px;
+    }
+    .mobile-header button {
+      background: none; border: none; color: var(--text2); padding: 0;
+      cursor: pointer; width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .mobile-header button:active { background: var(--accent); transform: scale(0.9); }
+    /* The theme icon is injected as inline SVG without width/height attributes, so it
+       needs an explicit size here or it renders at its default (clipped) dimensions. */
+    .mobile-header button svg { width: 20px; height: 20px; }
+    .mobile-header button span { display: flex; align-items: center; justify-content: center; }
+
+    /* Bottom tab bar */
+    /* Same fix, plus real breathing room so the icons aren't against the rim. */
+    .mobile-bottom-bar {
+      display: flex; align-items: center; justify-content: space-around;
+      min-height: calc(62px + env(safe-area-inset-bottom)); height: auto;
+      padding: 9px 0.25rem calc(env(safe-area-inset-bottom) + 9px);
+      background: var(--surface); flex-shrink: 0; z-index: 50;
+      border-top: 1px solid var(--border);
+    }
+    .mobile-bottom-bar .tab-btn {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 4px; flex: 1;
+      /* was a hardcoded light-mode grey that ignored the theme */
+      background: none; border: none; color: var(--text2);
+      font-size: var(--fs-2xs); font-weight: 600; letter-spacing: 0.02em;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: color 0.15s, transform 0.1s; padding: 4px 0;
+    }
+    .mobile-bottom-bar .tab-btn svg { width: 24px; height: 24px; transition: transform 0.15s; }
+    .mobile-bottom-bar .tab-btn.active { color: var(--primary); }
+    .mobile-bottom-bar .tab-btn.active svg { transform: scale(1.1); }
+    .mobile-bottom-bar .tab-btn:active { transform: scale(0.9); }
+    .mobile-bottom-bar .tab-btn .tab-dot {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--primary); opacity: 0; transition: opacity 0.15s;
+    }
+    .mobile-bottom-bar .tab-btn.active .tab-dot { opacity: 1; }
+
+    /* Mobile settings dropdown */
+    .mobile-settings-menu {
+      display: none; position: fixed; top: 52px;
+      top: calc(52px + env(safe-area-inset-top));
+      left: 0.75rem; z-index: 100;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+      padding: 6px; box-shadow: var(--shadow);
+      flex-direction: column; gap: 2px; min-width: 170px;
+    }
+    .mobile-settings-menu.visible { display: flex; }
+    .mobile-settings-menu button {
+      display: flex; align-items: center; gap: 10px;
+      background: none; border: none; color: var(--text); padding: 12px 14px;
+      font-size: 0.85rem; font-weight: 500; border-radius: 12px;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s;
+    }
+    .mobile-settings-menu button:active { background: var(--accent); }
+    .mobile-settings-menu button svg { color: var(--text2); flex-shrink: 0; }
+
+    /* Mobile backdrop overlay */
+    .mobile-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(46,46,61,0.35); z-index: 199;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mobile-backdrop.visible { display: block; }
+
+    /* Main content */
+    main {
+      flex: 1; padding: 1rem; overflow-y: auto;
+      padding-bottom: 0.5rem; background: var(--bg);
+    }
+
+    /* Modern circular / pill buttons */
+    .btn, .btn-outline, .btn-primary, .btn-danger, .btn-success, .plan-btn {
+      min-height: 44px; display: inline-flex;
+      align-items: center; justify-content: center;
+      border-radius: 999px; transition: transform 0.1s, box-shadow 0.15s;
+    }
+    .btn:active, .btn-outline:active, .btn-primary:active,
+    .btn-danger:active, .btn-success:active, .plan-btn:active {
+      transform: scale(0.95);
+    }
+    .btn-primary {
+      background: var(--primary); box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+      border-radius: 999px;
+    }
+    .btn-primary:active { box-shadow: 0 2px 8px rgba(99,102,241,0.25); }
+    .btn-success { box-shadow: 0 4px 16px rgba(34,197,94,0.18); }
+
+    /* Cards float on the light background */
+    .cal-hero, .macro-card, .slot-card, .food-row, .day-card,
+    .saved-meal-card, .plan-day-card {
+      background: var(--surface); border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+    }
+
+    /* Floating chat bubble */
+    .mobile-chat-fab {
+      display: flex; position: fixed; z-index: 100;
+      right: 1rem; bottom: calc(76px + env(safe-area-inset-bottom));
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--primary); border: none; color: #fff;
+      align-items: center; justify-content: center;
+      box-shadow: 0 6px 20px rgba(99,102,241,0.45);
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .mobile-chat-fab svg { width: 26px; height: 26px; }
+    .mobile-chat-fab:active { transform: scale(0.9); box-shadow: 0 2px 10px rgba(99,102,241,0.3); }
+    .mobile-chat-fab.hidden { display: none; }
+
+    /* AI panel: bottom-sheet (60% height) */
+    .ai-panel {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      width: 100%; max-width: 100%; z-index: 200;
+      height: 60vh; max-height: 60vh;
+      transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .ai-panel.open { transform: translateY(0); }
+    .ai-panel-inner {
+      border-radius: 24px 24px 0 0; border: none; background: var(--surface2);
+      height: 100%; display: flex; flex-direction: column;
+      box-shadow: 0 -8px 30px rgba(0,0,0,0.18);
+    }
+    .ai-panel-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.6rem 1rem; border-radius: 24px 24px 0 0; }
+    .ai-input-area { padding-bottom: calc(0.6rem + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border); }
+    .ai-messages { background: var(--surface2); flex: 1; overflow-y: auto; }
+    .ai-msg-user { background: linear-gradient(135deg, var(--primary), var(--primary-dim)); border-radius: 20px 20px 4px 20px; }
+    .ai-msg-bot { background: var(--surface); border: 1px solid var(--border); border-radius: 20px 20px 20px 4px; }
+    .mobile-chat-close { display: flex; border-radius: 50%; }
+
+    /* AI input bar pill shape */
+    .ai-input-bar input { border-radius: 999px; background: var(--surface2); border-color: var(--border); }
+    .ai-input-bar button { border-radius: 50%; width: 40px; height: 40px; padding: 0; }
+
+    /* Calendar week grid — wrap onto multiple rows instead of scrolling sideways.
+       Seven 110px columns forced a ~770px scroller; vertical-only is the rule now. */
+    .week-grid {
+      grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+      gap: 0.4rem; padding-bottom: 0.5rem;
+    }
+    .week-grid .day-card { min-width: 0; padding: 0.6rem; min-height: 96px; }
+
+    /* Calendar controls stack */
+    .calendar-controls { flex-direction: column; align-items: stretch; }
+    .calendar-actions { margin-left: 0; flex-wrap: wrap; }
+
+    /* Date nav wraps */
+    .date-nav { flex-wrap: wrap; gap: 0.5rem; }
+    .date-nav .date-label { min-width: auto; font-size: 1rem; }
+    .date-nav .nav-arrow, .calendar-nav .nav-arrow {
+      min-width: 44px; min-height: 44px; border-radius: 50%;
+    }
+    .date-nav .today-btn, .calendar-nav .today-btn {
+      min-height: 44px; padding: 0.4rem 0.8rem; border-radius: 999px;
+    }
+
+    /* Single column grids */
+    .profile-grid, .settings-grid { grid-template-columns: 1fr; }
+
+    /* Undo toast + notify: above bottom bar */
+    .undo-toast {
+      bottom: calc(72px + env(safe-area-inset-bottom));
+      left: 1rem; right: 1rem; transform: none;
+      border-radius: 999px;
+    }
+    .notify-banner {
+      left: 1rem; right: 1rem; transform: none;
+      top: calc(60px + env(safe-area-inset-top));
+      border-radius: 999px; background: var(--surface);
+    }
+
+    /* Ingredient / food / exercise stacking */
+    .ingredient-header { display: none !important; }
+    .ingredient-row { flex-wrap: wrap; }
+    .ingredient-row .search-wrap { flex: 1 1 100%; min-width: 0; }
+    .ingredient-row .narrow { flex: 1; max-width: none; min-width: 0; }
+    .exercise-form .form-row { grid-template-columns: 1fr; }
+    .food-row { flex-wrap: wrap; gap: 0.4rem; }
+    .food-actions { margin-left: auto; }
+    .plan-day-ex { flex-wrap: wrap; }
+    .plan-day-ex input:first-child { flex: 1 1 100%; min-width: 0; }
+    .plan-day-card .day-header { flex-wrap: wrap; }
+    .saved-meal-card { flex-direction: column; gap: 0.6rem; }
+    .saved-meal-actions { width: 100%; justify-content: flex-end; }
+  }
+
+  /* Extra-small screens (< 400px) */
+  @media (max-width: 400px) {
+    main { padding: 0.75rem; }
+    h2 { font-size: 1.25rem; }
+    .cal-hero .number { font-size: 2.5rem; }
+    .macro-card { padding: 0.6rem 0.4rem; }
+    .macro-card .value { font-size: 1.1rem; }
+    .slot-cards { grid-template-columns: 1fr; }
+  }
+</style>
+<script>
+  // Apply saved theme before render to avoid a flash of the wrong theme.
+  (function () {
+    try {
+      var saved = localStorage.getItem("theme");
+      var theme = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+
+<div class="mobile-header">
+  <button onclick="openMobileSettings()" aria-label="Settings">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
+  <span class="mobile-title">FitTrack AI</span>
+  <button onclick="location.reload()" aria-label="Reload">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+  </button>
+  <button onclick="toggleTheme()" aria-label="Toggle dark mode"><span id="mobileThemeIcon"></span></button>
+</div>
+<div class="mobile-settings-menu" id="mobileSettingsMenu">
+  <button onclick="mobileSettingsGo('profile')">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Profile
+  </button>
+  <button onclick="mobileSettingsGo('settings')">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Settings
+  </button>
+  <button onclick="mobileSettingsGo('meals')">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
+    Saved Meals
+  </button>
+</div>
+<div class="mobile-backdrop" onclick="closeMobilePanels()"></div>
+
+<nav>
+  <h1>FitTrack AI</h1>
+  <div class="nav-header">Nutrition</div>
+  <a href="#" data-page="dashboard" class="active">Dashboard</a>
+  <a href="#" data-page="meals">Saved Meals</a>
+  <a href="#" data-page="food">Food Log</a>
+  <div class="nav-header">Exercise</div>
+  <a href="#" data-page="calendar">Calendar</a>
+  <a href="#" data-page="exercise">Exercise Log</a>
+  <div class="spacer"></div>
+  <a href="#" data-page="profile">User Profile</a>
+  <a href="#" data-page="settings">Settings</a>
+  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+    <span id="themeIcon"></span><span id="themeLabel">Dark Mode</span>
+  </button>
+  <div class="date-display" id="dateDisplay"></div>
+</nav>
+
+<main>
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <h2>Today's Overview</h2>
+    <div class="cal-hero">
+      <div class="number" id="totalCals">0</div>
+      <div class="label">calories today</div>
+      <div class="hero-meta" id="calMeta"></div>
+      <div class="hero-track"><div class="hero-track-fill" id="calTrack" style="width:0%"></div></div>
+    </div>
+    <div class="macro-bars">
+      <div class="macro-card protein">
+        <div class="macro-name">Protein</div>
+        <div class="value" id="dashProtein">0g</div>
+        <div class="bar-bg"><div class="bar-fill" id="barProtein" style="width:0%"></div></div>
+      </div>
+      <div class="macro-card carbs">
+        <div class="macro-name">Carbs</div>
+        <div class="value" id="dashCarbs">0g</div>
+        <div class="bar-bg"><div class="bar-fill" id="barCarbs" style="width:0%"></div></div>
+      </div>
+      <div class="macro-card fat">
+        <div class="macro-name">Fat</div>
+        <div class="value" id="dashFat">0g</div>
+        <div class="bar-bg"><div class="bar-fill" id="barFat" style="width:0%"></div></div>
+      </div>
+    </div>
+    <h3>Meals</h3>
+    <div class="slot-cards" id="dashSlots"></div>
+  </div>
+
+  <!-- SAVED MEALS -->
+  <div class="page" id="page-meals">
+    <h2>Saved Meals</h2>
+    <div class="saved-meals-list" id="savedMealsList"></div>
+    <div class="create-meal-form" id="createMealForm">
+      <h3 id="mealFormTitle">Create Meal</h3>
+      <div style="margin-bottom:0.6rem;">
+        <input id="newMealName" placeholder="Meal name (e.g. Chicken and Rice)" style="width:100%;padding:0.5rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.9rem;">
+      </div>
+      <div class="ingredient-header" id="ingredientHeader" style="display:none;">
+        <span class="ing-header-name">Name</span>
+        <span class="ing-header-narrow">Weight (g)</span>
+        <span class="ing-header-narrow" style="color:var(--text)">Calories</span>
+        <span class="ing-header-narrow" style="color:var(--red)">Protein (g)</span>
+        <span class="ing-header-narrow" style="color:var(--green)">Carbs (g)</span>
+        <span class="ing-header-narrow" style="color:var(--blue)">Fat (g)</span>
+        <span style="width:2rem;flex-shrink:0;"></span>
+      </div>
+      <div id="ingredientRows"></div>
+      <div style="display:flex;gap:0.5rem;margin-top:0.6rem;flex-wrap:wrap;">
+        <button class="btn-outline" onclick="addIngredientRow()">+ Ingredient</button>
+        <button class="btn btn-primary" id="mealFormSubmitBtn" onclick="saveMeal()">Save Meal</button>
+        <button class="btn-outline" id="mealFormCancelBtn" style="display:none;" onclick="cancelMealEdit()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOD LOG -->
+  <div class="page" id="page-food">
+    <h2>Food Log</h2>
+    <div class="date-nav">
+      <div class="date-nav-main">
+        <button class="nav-arrow" onclick="foodDateShift(-1)">&larr;</button>
+        <div class="date-label" id="foodDateLabel"></div>
+        <button class="nav-arrow" onclick="foodDateShift(1)">&rarr;</button>
+      </div>
+      <div class="date-nav-aux">
+        <input type="date" id="foodDatePicker" onchange="foodDatePick(this.value)">
+        <button class="today-btn" onclick="foodDateGoToday()">Today</button>
+      </div>
+    </div>
+
+    <div class="manual-food-form" style="background:var(--surface);border-radius:var(--radius);padding:1rem;margin-bottom:1rem;">
+      <h3 style="margin-bottom:0.6rem;">Log Food</h3>
+
+      <div id="foodSearchStep">
+        <div class="search-wrap" style="position:relative;">
+          <input id="manualFoodName" placeholder="Search foods... (e.g. chicken, rice, banana)" style="width:100%;padding:0.5rem 0.8rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.95rem;" oninput="searchFoodKBManual(this)" onfocus="showFoodKBBrowse()" autocomplete="off">
+          <div class="search-results" id="manualFoodResults" style="display:none;"></div>
+        </div>
+        <div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.5rem;">
+          <select id="savedMealSelect" style="flex:1;padding:0.4rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.85rem;">
+            <option value="">Or log a saved meal...</option>
+          </select>
+          <select id="savedMealSlot" style="padding:0.4rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.85rem;">
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+            <option value="snack">Snack</option>
+          </select>
+          <button class="btn-outline" style="font-size:0.82rem;" onclick="logSelectedSavedMeal()">Log</button>
+        </div>
+        <p style="margin-top:0.5rem;font-size:0.8rem;color:var(--text2)">Can't find it? <a href="#" onclick="showCustomFoodForm(); return false;" style="color:var(--primary)">Enter manually</a></p>
+      </div>
+
+      <div id="foodDetailStep" style="display:none;">
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.6rem;">
+          <button class="btn-outline" style="font-size:0.8rem;padding:0.2rem 0.5rem;" onclick="backToSearch()">&larr;</button>
+          <h4 id="selectedFoodTitle" style="margin:0;font-size:1rem;"></h4>
+        </div>
+        <div id="foodDetailInfo" style="font-size:0.8rem;color:var(--text2);margin-bottom:0.5rem;"></div>
+        <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;flex-wrap:wrap;align-items:center;">
+          <label style="font-size:0.85rem;color:var(--text2)">Amount:</label>
+          <input id="manualFoodQty" type="number" min="0" step="any" style="width:70px;padding:0.4rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.9rem;text-align:center;" oninput="recalcManualFood()">
+          <select id="manualFoodUnit" style="padding:0.4rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.85rem;" onchange="recalcManualFood()">
+            <option value="g">grams</option>
+            <option value="oz">oz</option>
+            <option value="serving">servings</option>
+          </select>
+          <select id="manualFoodSlot" style="padding:0.4rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.85rem;">
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+            <option value="snack">Snack</option>
+          </select>
+        </div>
+        <div id="foodNutritionPreview" style="display:flex;gap:0.4rem;margin-bottom:0.6rem;flex-wrap:wrap;"></div>
+        <button class="btn btn-primary" onclick="logManualFood()">Log Food</button>
+      </div>
+
+      <div id="customFoodStep" style="display:none;">
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.6rem;">
+          <button class="btn-outline" style="font-size:0.8rem;padding:0.2rem 0.5rem;" onclick="backToSearch()">&larr;</button>
+          <h4 style="margin:0;font-size:1rem;">Custom Food</h4>
+        </div>
+        <div style="display:flex;gap:0.4rem;margin-bottom:0.4rem;flex-wrap:wrap;">
+          <input id="customFoodName" placeholder="Food name" style="flex:2;min-width:120px;padding:0.4rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.9rem;">
+          <select id="customFoodSlot" style="padding:0.4rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.85rem;">
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+            <option value="snack">Snack</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:0.4rem;margin-bottom:0.5rem;flex-wrap:wrap;">
+          <input id="customFoodQty" type="number" placeholder="g" min="0" style="width:55px;padding:0.4rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.85rem;text-align:center;">
+          <input id="customFoodCal" type="number" placeholder="kcal" min="0" style="width:60px;padding:0.4rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.85rem;text-align:center;">
+          <input id="customFoodProt" type="number" placeholder="Protein" min="0" step="0.1" style="width:65px;padding:0.4rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.85rem;text-align:center;">
+          <input id="customFoodCarb" type="number" placeholder="Carbs" min="0" step="0.1" style="width:60px;padding:0.4rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.85rem;text-align:center;">
+          <input id="customFoodFat" type="number" placeholder="Fat" min="0" step="0.1" style="width:55px;padding:0.4rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.85rem;text-align:center;">
+        </div>
+        <button class="btn btn-primary" onclick="logCustomFood()">Log Food</button>
+      </div>
+    </div>
+
+    <div id="foodSlots"></div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div class="page" id="page-calendar">
+    <h2>Workout Calendar</h2>
+    <div id="calendarContent"></div>
+  </div>
+
+  <!-- EXERCISE -->
+  <div class="page" id="page-exercise">
+    <h2>Exercise Log</h2>
+    <div class="date-nav">
+      <div class="date-nav-main">
+        <button class="nav-arrow" onclick="exerciseDateShift(-1)">&larr;</button>
+        <div class="date-label" id="exDateLabel"></div>
+        <button class="nav-arrow" onclick="exerciseDateShift(1)">&rarr;</button>
+      </div>
+      <div class="date-nav-aux">
+        <input type="date" id="exDatePicker" onchange="exerciseDatePick(this.value)">
+        <button class="today-btn" onclick="exerciseDateGoToday()">Today</button>
+      </div>
+    </div>
+    <div id="exerciseList" style="background:var(--surface);border-radius:var(--radius);padding:1rem;margin-bottom:1rem;"></div>
+    <h3>Log Exercise</h3>
+    <div class="exercise-form">
+      <div class="form-row">
+        <div class="search-wrap" style="flex:1;min-width:0;">
+          <!-- Suggestions open on typing only. Opening on focus made the Edit button,
+               which focuses this field, pop the dropdown unprompted. -->
+          <input id="exName" placeholder="Exercise name (e.g. bench press)"
+                 autocomplete="off"
+                 oninput="searchExercises(this)"
+                 style="width:100%;">
+          <div class="search-results" id="exNameResults" style="display:none;left:0;right:0;"></div>
+        </div>
+        <select id="exType">
+          <option value="strength">Strength</option>
+          <option value="cardio">Cardio</option>
+          <option value="mobility">Mobility</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <h4 style="margin:0.3rem 0 0;font-size:0.8rem;color:var(--text2)">Sets</h4>
+      <!-- Rows are built by resetSetList() so markup lives in one place. --><div id="setList"></div>
+      <div style="display:flex;gap:0.4rem">
+        <button class="add-set-btn" style="flex:1" onclick="addExerciseSet()">+ Add Set</button>
+        <button class="add-set-btn" style="flex:1" onclick="duplicateLastSet()">Duplicate Last Set</button>
+      </div>
+      <input id="exDuration" type="number" placeholder="Duration (min, optional)" min="1">
+      <div style="display:flex;gap:0.4rem">
+        <button id="exSubmitBtn" class="btn btn-primary" style="flex:1" onclick="logExerciseForm()">Log Exercise</button>
+        <button id="exCancelBtn" class="btn-outline" style="display:none" onclick="cancelEdit()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="page" id="page-profile">
+    <h2>Your Profile</h2>
+    <div class="profile-section">
+      <h3>Personal Info</h3>
+      <div class="profile-grid">
+        <label>Name</label>
+        <input id="profName" placeholder="Your name">
+        <label>Age</label>
+        <input id="profAge" type="number" placeholder="25" min="0" max="120">
+        <label>Gender</label>
+        <select id="profGender">
+          <option value="">Select...</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
+        <label>Units</label>
+        <select id="profUnitSystem" onchange="toggleUnitFields()">
+          <option value="metric">Metric (cm/kg)</option>
+          <option value="imperial">Imperial (ft-in/lbs)</option>
+        </select>
+        <label id="metricHeight" class="unit-metric">Height (cm)</label>
+        <input id="profHeight" class="unit-metric" type="number" placeholder="175" min="0" step="0.1">
+        <label id="metricWeight" class="unit-metric">Weight (kg)</label>
+        <input id="profWeight" class="unit-metric" type="number" placeholder="80" min="0" step="0.1">
+        <label id="imperialHeight" class="unit-imperial" style="display:none">Height</label>
+        <div class="unit-imperial" style="display:none;gap:0.3rem;align-items:center;">
+          <input id="profHeightFt" type="number" placeholder="5" min="0" max="8" style="width:60px;padding:0.5rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.9rem;"> <span style="color:var(--text2)">ft</span>
+          <input id="profHeightIn" type="number" placeholder="10" min="0" max="11" style="width:60px;padding:0.5rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.9rem;"> <span style="color:var(--text2)">in</span>
+        </div>
+        <label id="imperialWeight" class="unit-imperial" style="display:none">Weight (lbs)</label>
+        <input id="profWeightLbs" class="unit-imperial" type="number" placeholder="180" min="0" step="0.1" style="display:none">
+      </div>
+    </div>
+    <div class="profile-section">
+      <h3>Fitness Profile</h3>
+      <div class="profile-grid">
+        <label>Goal</label>
+        <select id="profGoal">
+          <option value="">Select...</option>
+          <option value="lose_weight">Lose Weight</option>
+          <option value="build_muscle">Build Muscle</option>
+          <option value="maintain">Maintain</option>
+          <option value="improve_endurance">Improve Endurance</option>
+          <option value="general_fitness">General Fitness</option>
+        </select>
+        <label>Activity Level</label>
+        <select id="profActivity">
+          <option value="">Select...</option>
+          <option value="sedentary">Sedentary</option>
+          <option value="lightly_active">Lightly Active</option>
+          <option value="moderately_active">Moderately Active</option>
+          <option value="very_active">Very Active</option>
+          <option value="athlete">Athlete</option>
+        </select>
+        <label>Experience</label>
+        <select id="profExperience">
+          <option value="">Select...</option>
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+      </div>
+      <label style="display:block;margin-top:0.8rem;font-size:0.9rem;color:var(--text2);">Injuries / Limitations</label>
+      <textarea id="profInjuries" class="profile-grid" style="width:100%;margin-top:0.3rem;padding:0.5rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);font-size:0.9rem;resize:vertical;min-height:60px;" placeholder="e.g. Bad left knee, lower back issues..."></textarea>
+    </div>
+    <div class="profile-section">
+      <h3>Daily Targets</h3>
+      <div class="profile-grid">
+        <label>Calories</label>
+        <input id="profCals" type="number" placeholder="2000" min="0">
+        <label>Protein (g)</label>
+        <input id="profProtein" type="number" placeholder="150" min="0">
+        <label>Carbs (g)</label>
+        <input id="profCarbs" type="number" placeholder="250" min="0">
+        <label>Fat (g)</label>
+        <input id="profFat" type="number" placeholder="70" min="0">
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="saveProfile()">Save Profile</button>
+    <span id="saveConfirm" style="margin-left:1rem;color:var(--green);font-size:0.9rem;display:none;">Saved!</span>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <h2>Settings</h2>
+    <div style="background:var(--surface);border-radius:var(--radius);padding:1.5rem;max-width:500px;">
+      <h3>App Configuration</h3>
+      <div class="settings-grid">
+        <label>LLM Provider</label>
+        <select id="setLlmProvider" disabled>
+          <option value="none">None</option>
+          <option value="ollama">Ollama</option>
+          <option value="anthropic">Anthropic</option>
+        </select>
+        <label>Data Directory</label>
+        <input id="setDataDir" value="data" disabled>
+      </div>
+      <p style="margin-top:1rem;font-size:0.8rem;color:var(--text2);">App settings are configured via environment variables. See .env file.</p>
+    </div>
+    <div style="background:var(--surface);border-radius:var(--radius);padding:1.5rem;max-width:500px;margin-top:1rem;">
+      <h3>Install Status</h3>
+      <p style="font-size:0.8rem;color:var(--text2);margin-bottom:0.8rem;">
+        Whether this device can install the app to your home screen. Installing needs a
+        secure origin — HTTPS, or an origin you've allow-listed in
+        <code>chrome://flags</code> &rarr; "Insecure origins treated as secure".
+      </p>
+      <div id="installDiag" style="display:flex;flex-direction:column;gap:0.4rem;font-size:0.85rem;"></div>
+    </div>
+  </div>
+</main>
+
+<div class="mobile-bottom-bar">
+  <button class="tab-btn active" data-tab="dashboard" onclick="switchMobileTab('dashboard')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span>Home</span><div class="tab-dot"></div>
+  </button>
+  <button class="tab-btn" data-tab="food" onclick="switchMobileTab('food')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+    <span>Food</span><div class="tab-dot"></div>
+  </button>
+  <button class="tab-btn" data-tab="calendar" onclick="switchMobileTab('calendar')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <span>Calendar</span><div class="tab-dot"></div>
+  </button>
+  <button class="tab-btn" data-tab="exercise" onclick="switchMobileTab('exercise')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5L17.5 17.5"/><path d="M3 10l3.5-3.5"/><path d="M14 21l3.5-3.5"/><path d="M21 14l-3.5 3.5"/><path d="M10 3L6.5 6.5"/><circle cx="12" cy="12" r="1"/></svg>
+    <span>Exercise</span><div class="tab-dot"></div>
+  </button>
+</div>
+
+<button class="mobile-chat-fab" onclick="toggleMobileChatSheet()" aria-label="AI Chat">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</button>
+
+<div class="undo-toast" id="undoToast">
+  <span id="undoMsg"></span>
+  <button onclick="performUndo()">Undo</button>
+</div>
+<div class="offline-banner" id="offlineBanner">Offline — can't reach the server. Your data lives on your PC, so nothing can load or save right now.</div>
+<div class="notify-banner" id="notifyBanner"></div>
+
+<!-- AI Assistant Panel -->
+<aside class="ai-panel">
+  <div class="ai-panel-inner">
+    <div class="ai-panel-header">
+      <div class="ai-panel-dot" data-tooltip="AI Assistant Unavailable"></div>
+      <h2>AI Assistant</h2>
+      <button class="mobile-chat-close" onclick="toggleMobileChatSheet()" aria-label="Close">&times;</button>
+    </div>
+    <div class="ai-messages" id="aiMessages">
+      <div class="ai-msg ai-msg-bot">Hey! I'm your fitness assistant. Tell me what you ate, ask questions about your diet, or log exercises.</div>
+    </div>
+    <div class="ai-thinking" id="aiThinking">
+      <div class="ai-thinking-dots"><span></span><span></span><span></span></div>
+      <div class="ai-thinking-label">Thinking...</div>
+    </div>
+    <div class="ai-input-area">
+      <form class="ai-input-bar" id="aiForm" autocomplete="off">
+        <input id="aiInput" placeholder="Log food, ask questions..." autofocus>
+        <button class="btn btn-primary" type="submit">Send</button>
+      </form>
+      <div class="ai-hint">Try: "3 eggs for breakfast" or "how much protein today?"</div>
+    </div>
+  </div>
+</aside>
+
+<script>
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+let chatContext = null;
+let aiThinking = false;
+let TARGETS = { calories: 2000, protein: 150, carbs: 250, fat: 70 };
+let _notifyTimer = null;
+
+function showNotify(msg) {
+  clearTimeout(_notifyTimer);
+  const el = document.getElementById("notifyBanner");
+  el.textContent = msg;
+  el.classList.add("visible");
+  _notifyTimer = setTimeout(() => el.classList.remove("visible"), 3000);
+}
+let _profileSnapshot = null;
+
+const _PROFILE_FIELD_IDS = [
+  "profName","profAge","profGender","profUnitSystem",
+  "profHeight","profWeight","profHeightFt","profHeightIn","profWeightLbs",
+  "profGoal","profActivity","profExperience","profInjuries",
+  "profCals","profProtein","profCarbs","profFat",
+];
+
+function _snapshotProfile() {
+  _profileSnapshot = {};
+  _PROFILE_FIELD_IDS.forEach(id => _profileSnapshot[id] = document.getElementById(id).value);
+}
+
+function _isProfileDirty() {
+  if (!_profileSnapshot) return false;
+  return _PROFILE_FIELD_IDS.some(id => document.getElementById(id).value !== _profileSnapshot[id]);
+}
+
+function showUnitFields() {
+  const imperial = document.getElementById("profUnitSystem").value === "imperial";
+  document.querySelectorAll(".unit-metric").forEach(el => el.style.display = imperial ? "none" : "");
+  document.querySelectorAll(".unit-imperial").forEach(el => {
+    const isFlexDiv = el.tagName === "DIV" && !el.classList.contains("profile-grid");
+    el.style.display = imperial ? (isFlexDiv ? "flex" : "") : "none";
+  });
+}
+
+function toggleUnitFields() {
+  const imperial = document.getElementById("profUnitSystem").value === "imperial";
+  if (imperial) {
+    const cm = parseFloat(document.getElementById("profHeight").value);
+    const kg = parseFloat(document.getElementById("profWeight").value);
+    if (cm) {
+      const totalIn = cm / 2.54;
+      document.getElementById("profHeightFt").value = Math.floor(totalIn / 12);
+      document.getElementById("profHeightIn").value = Math.round(totalIn % 12);
+    }
+    if (kg) {
+      document.getElementById("profWeightLbs").value = Math.round(kg * 2.205 * 10) / 10;
+    }
+  } else {
+    const ft = parseInt(document.getElementById("profHeightFt").value) || 0;
+    const inch = parseInt(document.getElementById("profHeightIn").value) || 0;
+    const lbs = parseFloat(document.getElementById("profWeightLbs").value);
+    if (ft || inch) {
+      document.getElementById("profHeight").value = Math.round((ft * 30.48 + inch * 2.54) * 10) / 10;
+    }
+    if (lbs) {
+      document.getElementById("profWeight").value = Math.round(lbs / 2.205 * 10) / 10;
+    }
+  }
+  showUnitFields();
+}
+
+async function loadProfile() {
+  const p = await api("GET", "/profile");
+  TARGETS.calories = p.calorie_target;
+  TARGETS.protein = p.protein_target_g;
+  TARGETS.carbs = p.carbs_target_g;
+  TARGETS.fat = p.fat_target_g;
+  document.getElementById("profName").value = p.name || "";
+  document.getElementById("profAge").value = p.age || "";
+  document.getElementById("profGender").value = p.gender || "";
+  document.getElementById("profUnitSystem").value = p.unit_system || "metric";
+  document.getElementById("profHeight").value = p.height_cm || "";
+  document.getElementById("profWeight").value = p.weight_kg || "";
+  document.getElementById("profHeightFt").value = p.height_ft || "";
+  document.getElementById("profHeightIn").value = p.height_in || "";
+  document.getElementById("profWeightLbs").value = p.weight_lbs || "";
+  document.getElementById("profGoal").value = p.fitness_goal || "";
+  document.getElementById("profActivity").value = p.activity_level || "";
+  document.getElementById("profExperience").value = p.experience_level || "";
+  document.getElementById("profInjuries").value = p.injuries || "";
+  document.getElementById("profCals").value = p.calorie_target;
+  document.getElementById("profProtein").value = p.protein_target_g;
+  document.getElementById("profCarbs").value = p.carbs_target_g;
+  document.getElementById("profFat").value = p.fat_target_g;
+  showUnitFields();
+  _snapshotProfile();
+}
+
+async function saveProfile() {
+  const unitSystem = document.getElementById("profUnitSystem").value;
+  const body = {
+    name: document.getElementById("profName").value,
+    age: parseInt(document.getElementById("profAge").value) || 0,
+    gender: document.getElementById("profGender").value,
+    unit_system: unitSystem,
+    height_cm: parseFloat(document.getElementById("profHeight").value) || 0,
+    weight_kg: parseFloat(document.getElementById("profWeight").value) || 0,
+    height_ft: parseInt(document.getElementById("profHeightFt").value) || 0,
+    height_in: parseInt(document.getElementById("profHeightIn").value) || 0,
+    weight_lbs: parseFloat(document.getElementById("profWeightLbs").value) || 0,
+    fitness_goal: document.getElementById("profGoal").value,
+    activity_level: document.getElementById("profActivity").value,
+    experience_level: document.getElementById("profExperience").value,
+    injuries: document.getElementById("profInjuries").value,
+    calorie_target: parseInt(document.getElementById("profCals").value) || 2000,
+    protein_target_g: parseInt(document.getElementById("profProtein").value) || 150,
+    carbs_target_g: parseInt(document.getElementById("profCarbs").value) || 250,
+    fat_target_g: parseInt(document.getElementById("profFat").value) || 70,
+  };
+  await api("PUT", "/profile", body);
+  TARGETS.calories = body.calorie_target;
+  TARGETS.protein = body.protein_target_g;
+  TARGETS.carbs = body.carbs_target_g;
+  TARGETS.fat = body.fat_target_g;
+  // Keep the set-row weight caption in step with the unit preference.
+  _weightUnit = unitSystem === "metric" ? "kg" : "lbs";
+  refreshWeightUnitCaptions();
+  _snapshotProfile();
+  const confirm = document.getElementById("saveConfirm");
+  confirm.style.display = "inline";
+  setTimeout(() => confirm.style.display = "none", 2000);
+  refreshData();
+}
+
+// --- NAV ---
+function _currentPage() {
+  const active = document.querySelector(".page.active");
+  return active ? active.id.replace("page-", "") : null;
+}
+
+function _restoreProfileSnapshot() {
+  if (!_profileSnapshot) return;
+  _PROFILE_FIELD_IDS.forEach(id => document.getElementById(id).value = _profileSnapshot[id]);
+  showUnitFields();
+}
+
+function switchToPage(page) {
+  const from = _currentPage();
+  if (from === "profile" && page !== "profile" && _isProfileDirty()) {
+    if (!confirm("You haven't saved your profile changes. Discard changes?")) {
+      _restoreProfileSnapshot();
+      return;
+    }
+  }
+  if (from === "meals" && page !== "meals") cancelMealEdit();
+  if (from === "food" && page !== "food") backToSearch();
+  if (from === "calendar" && page !== "calendar") {
+    if (_isPlanBuilderOpen() && _isPlanBuilderDirty()) {
+      if (!confirm("You have unsaved plan changes. Discard them?")) return;
+    }
+    _selectedCalDate = null; _editingPlanId = null; _editingPlanIsPreset = false; _editingPresetSourceId = null; _planBuilderDays = []; _planBuilderSnapshot = null; _planBuilderUndoStack = [];
+  }
+  document.querySelectorAll("nav a").forEach(n => n.classList.remove("active"));
+  const link = document.querySelector(`nav a[data-page="${page}"]`);
+  if (link) link.classList.add("active");
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById("page-" + page).classList.add("active");
+  localStorage.setItem("fittrack_page", page);
+  document.querySelectorAll('.mobile-bottom-bar .tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === page);
+  });
+  if (page === "dashboard" || page === "food") refreshData();
+  if (page === "food") refreshSavedMealDropdown();
+  if (page === "meals") refreshSavedMeals();
+  if (page === "calendar") refreshCalendar();
+  if (page === "exercise") refreshExercises();
+  if (page === "profile") loadProfile();
+  if (page === "settings") renderInstallDiag();
+}
+
+document.querySelectorAll("nav a").forEach(a => {
+  a.addEventListener("click", e => {
+    e.preventDefault();
+    switchToPage(a.dataset.page);
+  });
+});
+
+document.getElementById("dateDisplay").textContent = new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+
+// --- THEME ---
+const _SUN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+const _MOON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+
+function _applyThemeUI(theme) {
+  const isDark = theme === "dark";
+  const icon = isDark ? _SUN_SVG : _MOON_SVG;
+  const label = isDark ? "Light Mode" : "Dark Mode";
+  const themeIcon = document.getElementById("themeIcon");
+  const themeLabel = document.getElementById("themeLabel");
+  const mobileIcon = document.getElementById("mobileThemeIcon");
+  if (themeIcon) themeIcon.innerHTML = icon;
+  if (themeLabel) themeLabel.textContent = label;
+  if (mobileIcon) mobileIcon.innerHTML = icon;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", isDark ? "#1c1917" : "#f5f5f4");
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+  const next = cur === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  try { localStorage.setItem("theme", next); } catch (e) {}
+  _applyThemeUI(next);
+}
+
+_applyThemeUI(document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light");
+
+function esc(s) {
+  if (s == null) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+// --- API HELPERS ---
+// --- ELASTIC OVERSCROLL ---
+// Android WebView/Chrome show a glow at the scroll limit rather than iOS-style rubber
+// banding. This adds a damped bounce: keep dragging past either end and the pane
+// follows with diminishing travel, then springs back on release.
+function enableOverscrollBounce(el) {
+  if (!el) return;
+  const MAX = 88;          // px of travel at full pull
+  const RESIST = 0.55;     // lower = stiffer
+  let startY = 0, offset = 0, dir = 0, active = false;
+
+  el.addEventListener("touchstart", e => {
+    if (e.touches.length !== 1) return;
+    startY = e.touches[0].clientY;
+    offset = 0; dir = 0; active = true;
+    el.style.transition = "";
+  }, { passive: true });
+
+  el.addEventListener("touchmove", e => {
+    if (!active || e.touches.length !== 1) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dir === 0) {
+      const atTop = el.scrollTop <= 0;
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+      if (atTop && dy > 0) dir = 1;
+      else if (atBottom && dy < 0) dir = -1;
+      else return;                       // normal scrolling — stay out of the way
+      startY = e.touches[0].clientY;     // measure the pull from the limit itself
+      return;
+    }
+    const pull = e.touches[0].clientY - startY;
+    if ((dir === 1 && pull <= 0) || (dir === -1 && pull >= 0)) {
+      // Reversed back toward the content: hand control back to native scrolling.
+      dir = 0; offset = 0; el.style.transform = "";
+      return;
+    }
+    e.preventDefault();
+    // Asymptotic easing so travel approaches MAX instead of tracking the finger 1:1.
+    const mag = MAX * (1 - Math.exp(-Math.abs(pull) * RESIST / MAX));
+    offset = dir === 1 ? mag : -mag;
+    el.style.transform = "translate3d(0," + offset.toFixed(1) + "px,0)";
+  }, { passive: false });
+
+  const release = () => {
+    active = false;
+    if (!offset) { dir = 0; return; }
+    offset = 0; dir = 0;
+    el.style.transition = "transform 0.34s cubic-bezier(0.16, 1, 0.3, 1)";
+    el.style.transform = "translate3d(0,0,0)";
+  };
+  el.addEventListener("touchend", release, { passive: true });
+  el.addEventListener("touchcancel", release, { passive: true });
+
+  // Mouse/trackpad: no touchend to spring back from, so accumulate while the
+  // wheel keeps pushing past the limit and release once it goes quiet.
+  let wheelPull = 0, wheelIdle = null;
+  el.addEventListener("wheel", e => {
+    const atTop = el.scrollTop <= 0;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+    const pushingPast = (atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0);
+    if (!pushingPast) {
+      if (wheelPull) {           // scrolled back into range — snap home early
+        wheelPull = 0;
+        el.style.transition = "transform 0.34s cubic-bezier(0.16, 1, 0.3, 1)";
+        el.style.transform = "translate3d(0,0,0)";
+      }
+      return;
+    }
+    e.preventDefault();
+    wheelPull = Math.max(-MAX, Math.min(MAX, wheelPull - e.deltaY * 0.32));
+    // Same asymptotic feel as the touch path.
+    const eased = MAX * (1 - Math.exp(-Math.abs(wheelPull) * RESIST / MAX)) * Math.sign(wheelPull);
+    el.style.transition = "";
+    el.style.transform = "translate3d(0," + eased.toFixed(1) + "px,0)";
+
+    clearTimeout(wheelIdle);
+    wheelIdle = setTimeout(() => {
+      wheelPull = 0;
+      el.style.transition = "transform 0.42s cubic-bezier(0.16, 1, 0.3, 1)";
+      el.style.transform = "translate3d(0,0,0)";
+    }, 90);
+  }, { passive: false });
+}
+
+function initOverscrollBounce() {
+  document.querySelectorAll("main, .ai-messages").forEach(enableOverscrollBounce);
+}
+
+// --- INSTALL DIAGNOSTICS ---
+// Chrome only creates a real standalone app (WebAPK) when the origin is secure AND a
+// service worker registered. Otherwise "Install" silently degrades to a bookmark that
+// opens in a browser tab — this panel shows which precondition is missing.
+let _installPromptSeen = false;
+window.addEventListener("beforeinstallprompt", () => { _installPromptSeen = true; });
+
+function _displayMode() {
+  for (const m of ["standalone", "fullscreen", "minimal-ui", "browser"]) {
+    if (window.matchMedia("(display-mode: " + m + ")").matches) return m;
+  }
+  return "unknown";
+}
+
+async function renderInstallDiag() {
+  const el = document.getElementById("installDiag");
+  if (!el) return;
+
+  const rows = [];
+  const secure = window.isSecureContext === true;
+  rows.push(["Secure origin", secure,
+    secure ? location.origin : location.origin + " — not trusted by Chrome"]);
+
+  const swSupported = "serviceWorker" in navigator;
+  rows.push(["Service worker API", swSupported,
+    swSupported ? "available" : "blocked (needs a secure origin)"]);
+
+  let reg = null;
+  if (swSupported) {
+    try { reg = await navigator.serviceWorker.getRegistration("/static/"); } catch (e) {}
+  }
+  rows.push(["Service worker active", !!reg, reg ? "registered" : "not registered"]);
+
+  let mOk = false, mDetail = "not reachable";
+  try {
+    const r = await fetch("manifest.json");
+    if (r.ok) {
+      const j = await r.json();
+      mOk = !!(j.name && j.display === "standalone");
+      mDetail = j.name + " — display: " + j.display;
+    }
+  } catch (e) {}
+  rows.push(["Manifest", mOk, mDetail]);
+
+  const mode = _displayMode();
+  const installed = mode !== "browser" && mode !== "unknown";
+  // Informational, not pass/fail — viewing this in a browser tab is perfectly normal.
+  rows.push(["Running as", installed ? true : null,
+    installed ? "installed app (" + mode + ")" : "browser tab (normal when viewing in Chrome)"]);
+
+  el.textContent = "";
+  for (const [label, ok, detail] of rows) {
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:baseline;gap:0.5rem;flex-wrap:wrap;";
+    const mark = document.createElement("span");
+    mark.textContent = ok === null ? "•" : (ok ? "✓" : "✕");
+    mark.style.cssText = "font-weight:800;width:1rem;color:"
+      + (ok === null ? "var(--text2)" : ok ? "var(--green)" : "var(--red)");
+    const name = document.createElement("span");
+    name.textContent = label;
+    name.style.cssText = "font-weight:600;min-width:10rem;";
+    const det = document.createElement("span");
+    det.textContent = detail;
+    det.style.cssText = "color:var(--text2);font-size:0.8rem;";
+    row.append(mark, name, det);
+    el.appendChild(row);
+  }
+
+  const verdict = document.createElement("p");
+  verdict.style.cssText = "margin-top:0.8rem;font-size:0.82rem;font-weight:600;";
+  if (installed) {
+    verdict.style.color = "var(--green)";
+    verdict.textContent = "Running as an installed app.";
+  } else if (!secure) {
+    verdict.style.color = "var(--red)";
+    verdict.textContent = "Blocked: this origin isn't secure, so Install only creates a "
+      + "browser shortcut. Allow-list " + location.origin + " in chrome://flags "
+      + "(\"Insecure origins treated as secure\"), relaunch Chrome, then reload this page.";
+  } else if (!reg) {
+    verdict.style.color = "var(--yellow)";
+    verdict.textContent = "Origin is secure but the service worker hasn't registered yet. "
+      + "Reload the page, then check again.";
+  } else {
+    verdict.style.color = "var(--green)";
+    verdict.textContent = _installPromptSeen
+      ? "Ready to install — use Chrome's menu, then launch from the new icon."
+      : "Preconditions met. If the menu still says \"Add to Home screen\", reload once more.";
+  }
+  el.appendChild(verdict);
+}
+
+// --- CONNECTIVITY ---
+// All data lives server-side (JSON on the host), so an unreachable server means
+// nothing can load or save. Surface that plainly instead of failing silently.
+// Both carry text meant for the user; technical detail goes to the console only.
+class OfflineError extends Error {}
+class ServerError extends Error {}
+
+const OFFLINE_MSG = "Couldn't reach the server — check your connection and try again.";
+const SERVER_MSG = "Something went wrong on the server. Please try again.";
+
+let _isOffline = false;
+function _setOffline(on) {
+  if (_isOffline === on) return;
+  _isOffline = on;
+  const el = document.getElementById("offlineBanner");
+  if (el) el.classList.toggle("visible", on);
+}
+
+window.addEventListener("offline", () => _setOffline(true));
+window.addEventListener("online", () => {
+  // "online" only means an interface exists, not that the server is reachable —
+  // clear optimistically and let the next call re-flag it if it still isn't.
+  _setOffline(false);
+  refreshData();
+});
+
+// Safety net: most api() callers don't catch. This fires only when nobody did, so
+// the user still gets plain-language feedback instead of a silent no-op.
+window.addEventListener("unhandledrejection", e => {
+  if (e.reason instanceof OfflineError || e.reason instanceof ServerError) {
+    e.preventDefault();
+    showNotify(e.reason.message);
+  }
+});
+
+// Keep a failed request from leaving the "thinking" spinner stuck on.
+function _clearBusy() {
+  try { setThinking(false); } catch (e) {}
+}
+
+// --- AUTH ---
+// Only used when the server sets FITNESS_AUTH_TOKEN; otherwise this is all inert.
+const AUTH_KEY = "fittrack_token";
+
+function _authToken() {
+  try { return localStorage.getItem(AUTH_KEY) || ""; } catch (e) { return ""; }
+}
+
+function _setAuthToken(t) {
+  try { t ? localStorage.setItem(AUTH_KEY, t) : localStorage.removeItem(AUTH_KEY); } catch (e) {}
+}
+
+// A ?token=... link (handy for the phone) bootstraps the token, then is stripped
+// from the URL so it isn't left sitting in history.
+(function adoptTokenFromUrl() {
+  const m = location.search.match(/[?&]token=([^&]+)/);
+  if (!m) return;
+  _setAuthToken(decodeURIComponent(m[1]));
+  history.replaceState(null, "", location.pathname);
+})();
+
+async function promptForToken(message) {
+  const entered = window.prompt(
+    message || "This server needs an access token.", _authToken()
+  );
+  if (entered === null) return false;
+  _setAuthToken(entered.trim());
+  return true;
+}
+
+async function api(method, path, body, _retried) {
+  const opts = { method, headers: { "Content-Type": "application/json" } };
+  const token = _authToken();
+  if (token) opts.headers["X-Auth-Token"] = token;
+  if (body) opts.body = JSON.stringify(body);
+  let r;
+  try {
+    r = await fetch(path, opts);
+  } catch (e) {
+    console.warn(`Network failure on ${method} ${path}:`, e);
+    _setOffline(true);
+    _clearBusy();
+    throw new OfflineError(OFFLINE_MSG);
+  }
+  _setOffline(false);
+  if (r.status === 401) {
+    // Ask once, then retry; a second 401 means the token entered was wrong.
+    _clearBusy();
+    if (!_retried && await promptForToken(
+      _authToken()
+        ? "That access token wasn't accepted. Try again:"
+        : "This server needs an access token."
+    )) {
+      return api(method, path, body, true);
+    }
+    throw new ServerError("Access token required to reach your data.");
+  }
+  if (!r.ok) {
+    let detail = "";
+    try { detail = (await r.json()).detail || ""; } catch (e2) {}
+    console.error(`HTTP ${r.status} on ${method} ${path}:`, detail || "(no detail)");
+    _clearBusy();
+    throw new ServerError(SERVER_MSG);
+  }
+  return r.json();
+}
+
+async function sendMessage(text, context) {
+  return api("POST", "/messages", { text, context });
+}
+
+// --- REFRESH DATA ---
+let foodLogDate = today();
+
+function refreshFoodDateLabel() {
+  document.getElementById("foodDateLabel").innerHTML = formatDateLabel(foodLogDate);
+  document.getElementById("foodDatePicker").value = foodLogDate;
+}
+function foodDateShift(delta) {
+  const d = new Date(foodLogDate + "T00:00:00");
+  d.setDate(d.getDate() + delta);
+  foodLogDate = d.toISOString().slice(0, 10);
+  refreshFoodLog();
+}
+function foodDatePick(val) {
+  if (!val) return;
+  foodLogDate = val;
+  refreshFoodLog();
+}
+function foodDateGoToday() {
+  foodLogDate = today();
+  refreshFoodLog();
+}
+async function refreshFoodLog() {
+  refreshFoodDateLabel();
+  const log = await api("GET", "/log/" + foodLogDate);
+  renderFoodLog(log);
+}
+
+async function refreshData() {
+  const [summary, log] = await Promise.all([
+    api("GET", "/summary/" + today()),
+    api("GET", "/log/" + foodLogDate),
+  ]);
+  renderDashboard(summary, log);
+  renderFoodLog(log);
+  refreshFoodDateLabel();
+}
+
+function renderDashboard(summary, log) {
+  const cals = Math.round(summary.total_calories);
+  document.getElementById("totalCals").textContent = cals.toLocaleString();
+
+  // Hero context: the total alone doesn't say whether it's a lot.
+  const target = TARGETS.calories || 0;
+  const meta = document.getElementById("calMeta");
+  const track = document.getElementById("calTrack");
+  if (target > 0) {
+    const pct = cals / target * 100;
+    const left = target - cals;
+    meta.innerHTML = left >= 0
+      ? `<b>${left.toLocaleString()}</b> left of ${target.toLocaleString()}`
+      : `<b>${Math.abs(left).toLocaleString()}</b> over ${target.toLocaleString()}`;
+    track.style.width = Math.min(100, Math.max(0, pct)) + "%";
+    track.className = "hero-track-fill" + (pct > 100 ? " over" : pct >= 90 ? " near" : "");
+  } else {
+    meta.textContent = "";
+    track.style.width = "0%";
+  }
+
+  const m = summary.total_macros;
+  document.getElementById("dashProtein").textContent = Math.round(m.protein_g) + "g";
+  document.getElementById("dashCarbs").textContent = Math.round(m.carbs_g) + "g";
+  document.getElementById("dashFat").textContent = Math.round(m.fat_g) + "g";
+  document.getElementById("barProtein").style.width = Math.min(100, m.protein_g / TARGETS.protein * 100) + "%";
+  document.getElementById("barCarbs").style.width = Math.min(100, m.carbs_g / TARGETS.carbs * 100) + "%";
+  document.getElementById("barFat").style.width = Math.min(100, m.fat_g / TARGETS.fat * 100) + "%";
+
+  const slots = log.slots || {};
+  const order = ["breakfast", "lunch", "dinner", "snack"];
+  const container = document.getElementById("dashSlots");
+  container.innerHTML = "";
+  for (const slot of order) {
+    const data = slots[slot];
+    const card = document.createElement("div");
+    card.className = "slot-card";
+    const dashSlotLabel = slot.toUpperCase();
+    if (data && data.foods.length) {
+      card.innerHTML = `
+        <div class="slot-header"><h3>${dashSlotLabel}</h3><span class="slot-cals">${Math.round(data.calories)} kcal</span></div>
+        ${data.foods.map(f => `
+          <div class="food-item">
+            <span>${esc(f.name.replace(/\b\w/g, c => c.toUpperCase()))} <span class="food-macros">${esc(f.quantity)}</span></span>
+            <span>${Math.round(f.calories)} kcal</span>
+          </div>
+        `).join("")}
+      `;
+    } else {
+      card.innerHTML = `<div class="slot-header"><h3>${dashSlotLabel}</h3></div><div class="empty-slot">Nothing logged</div>`;
+    }
+    container.appendChild(card);
+  }
+}
+
+function renderFoodLog(log) {
+  const slots = log.slots || {};
+  const order = ["breakfast", "lunch", "dinner", "snack"];
+  const container = document.getElementById("foodSlots");
+  container.innerHTML = "";
+  for (const slot of order) {
+    const data = slots[slot];
+    const div = document.createElement("div");
+    div.className = "log-slot";
+    div.dataset.slot = slot;
+    const foods = data ? data.foods : [];
+    const slotLabel = slot.toUpperCase();
+    const totalCals = data ? ` — Total: ${Math.round(data.calories)} kcal` : "";
+    div.innerHTML = `
+      <div class="slot-header" style="display:flex;align-items:baseline;gap:0.4rem;margin-bottom:0.6rem;">
+        <h3 style="margin:0;">${slotLabel}</h3>
+        <span style="font-size:0.85rem;color:var(--text);font-weight:600;">${totalCals}</span>
+      </div>
+      ${foods.length ? foods.map(f => {
+        const capName = f.name.replace(/\b\w/g, c => c.toUpperCase());
+        const fd = JSON.stringify({name:f.name,quantity_amount:f.quantity_amount,quantity_unit:f.quantity_unit||"g",calories:f.calories,protein_g:f.protein_g,carbs_g:f.carbs_g,fat_g:f.fat_g,slot}).replace(/'/g,"&#39;").replace(/"/g,"&quot;");
+        return `
+        <div class="food-row" draggable="true" data-food-name="${esc(f.name)}" data-source-slot="${slot}">
+          <span class="drag-handle">&#x2630;</span>
+          <div class="food-info">
+            <div class="food-name">${esc(capName)}</div>
+            <div class="food-detail">
+              <span class="food-qty">${esc(f.quantity)}</span>
+              <span class="macro-pill cal">${Math.round(f.calories)} kcal</span>
+              <span class="macro-pill prot">P ${Math.round(f.protein_g)}g</span>
+              <span class="macro-pill carb">C ${Math.round(f.carbs_g)}g</span>
+              <span class="macro-pill fat">F ${Math.round(f.fat_g)}g</span>
+            </div>
+          </div>
+          <div class="food-actions">
+            <button class="btn-outline" style="font-size:0.75rem;padding:0.2rem 0.5rem;" data-fd="${fd}" onclick="editFood(this, this.dataset.fd)">Edit</button>
+            <button class="btn btn-danger" data-fname="${esc(f.name)}" onclick="deleteFood(this.dataset.fname)">Delete</button>
+          </div>
+        </div>`;
+      }).join("") : '<div class="empty-slot">Nothing logged</div>'}
+    `;
+    container.appendChild(div);
+  }
+  initDragAndDrop();
+}
+
+// --- DRAG AND DROP ---
+function initDragAndDrop() {
+  const rows = document.querySelectorAll("#foodSlots .food-row[draggable]");
+  const slots = document.querySelectorAll("#foodSlots .log-slot");
+
+  rows.forEach(row => {
+    row.addEventListener("dragstart", e => {
+      row.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", JSON.stringify({
+        name: row.dataset.foodName,
+        sourceSlot: row.dataset.sourceSlot,
+      }));
+    });
+    row.addEventListener("dragend", () => {
+      row.classList.remove("dragging");
+      slots.forEach(s => s.classList.remove("drop-target"));
+    });
+  });
+
+  slots.forEach(slot => {
+    slot.addEventListener("dragover", e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      slot.classList.add("drop-target");
+    });
+    slot.addEventListener("dragleave", e => {
+      if (!slot.contains(e.relatedTarget)) {
+        slot.classList.remove("drop-target");
+      }
+    });
+    slot.addEventListener("drop", async e => {
+      e.preventDefault();
+      slot.classList.remove("drop-target");
+      let payload;
+      try { payload = JSON.parse(e.dataTransfer.getData("text/plain")); } catch { return; }
+      const targetSlot = slot.dataset.slot;
+      if (targetSlot === payload.sourceSlot) return;
+      const srcSlot = payload.sourceSlot;
+      setThinking(true);
+      await sendMessage("move " + payload.name + " to " + targetSlot);
+      setThinking(false);
+      showNotify("Moved " + payload.name + " to " + targetSlot + ".");
+      refreshData();
+      showUndo(`Moved "${payload.name}" to ${targetSlot}`, async () => {
+        setThinking(true);
+        await sendMessage("move " + payload.name + " to " + srcSlot);
+        setThinking(false);
+        showNotify("Moved " + payload.name + " back to " + srcSlot + ".");
+        refreshData();
+      });
+    });
+  });
+}
+
+// --- FOOD ACTIONS ---
+async function deleteFood(name) {
+  setThinking(true);
+  const result = await api("POST", "/log/delete-food", { name, day: foodLogDate });
+  setThinking(false);
+  if (!result.deleted) {
+    addAiMsg("system", result.error || "Could not delete " + name + ".");
+    return;
+  }
+  showNotify("Deleted " + result.food_name + ".");
+  refreshData();
+  const restoreData = result.restore_data;
+  showUndo(`Deleted "${result.food_name}"`, async () => {
+    await api("POST", "/log/restore", { meal_data: restoreData });
+    showNotify("Restored " + result.food_name + ".");
+    refreshData();
+  });
+}
+
+async function editFood(btn, jsonStr) {
+  const f = JSON.parse(jsonStr);
+  const row = btn.closest(".food-row");
+  row.draggable = false;
+
+  const kbResults = await api("GET", "/food-search?q=" + encodeURIComponent(f.name));
+  const kb = kbResults.find(r => r.name.toLowerCase() === f.name.toLowerCase())
+    || (kbResults.length ? kbResults[0] : null);
+
+  const unitOpts = ["g", "oz", "serving"];
+  if (kb && kb.serving_unit && !unitOpts.includes(kb.serving_unit)) {
+    unitOpts.push(kb.serving_unit);
+  }
+  const curUnit = f.quantity_unit || "g";
+  if (!unitOpts.includes(curUnit)) unitOpts.push(curUnit);
+
+  if (kb) {
+    row.dataset.editKb = JSON.stringify({ sg: kb.serving_grams, su: kb.serving_unit, cal: kb.calories, prot: kb.protein_g, carb: kb.carbs_g, fat: kb.fat_g });
+  } else {
+    row.dataset.editKb = "";
+  }
+  row.dataset.editFallback = JSON.stringify({ qty: f.quantity_amount || 1, unit: curUnit, cal: f.calories, prot: f.protein_g, carb: f.carbs_g, fat: f.fat_g });
+
+  const selStyle = "padding:0.3rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:6px;color:var(--text);font-size:0.82rem;";
+  row.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:0.4rem;width:100%;">
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;">
+        <input class="ef-name" value="${esc(f.name)}" style="flex:2;min-width:100px;padding:0.35rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:6px;color:var(--text);font-size:0.85rem;">
+        <select class="ef-slot" style="padding:0.35rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:6px;color:var(--text);font-size:0.82rem;">
+          ${["breakfast","lunch","dinner","snack"].map(s => `<option value="${s}" ${s===f.slot?"selected":""}>${s}</option>`).join("")}
+        </select>
+      </div>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;">
+        <input class="ef-qty" type="number" value="${f.quantity_amount}" min="0" step="any" style="width:60px;padding:0.3rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:6px;color:var(--text);font-size:0.82rem;text-align:center;" oninput="recalcEditFood(this)">
+        <select class="ef-unit" data-prev="${curUnit}" style="${selStyle}" onchange="recalcEditFood(this)">
+          ${unitOpts.map(u => `<option value="${u}" ${u===curUnit?"selected":""}>${u}</option>`).join("")}
+        </select>
+        <span class="ef-preview" style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+          <span class="macro-pill cal">${Math.round(f.calories)} kcal</span>
+          <span class="macro-pill prot">P ${Math.round(f.protein_g)}g</span>
+          <span class="macro-pill carb">C ${Math.round(f.carbs_g)}g</span>
+          <span class="macro-pill fat">F ${Math.round(f.fat_g)}g</span>
+        </span>
+      </div>
+      <div style="display:flex;gap:0.4rem;">
+        <button class="btn btn-primary" style="font-size:0.8rem;padding:0.3rem 0.7rem;" data-orig="${esc(f.name)}" onclick="saveEditFood(this,this.dataset.orig)">Save</button>
+        <button class="btn-outline" style="font-size:0.8rem;padding:0.3rem 0.7rem;" onclick="refreshFoodLog()">Cancel</button>
+      </div>
+    </div>
+  `;
+}
+
+function _toGrams(qty, unit, kb) {
+  if (unit === "g") return qty;
+  if (unit === "oz") return qty * 28.3495;
+  if (unit === "serving" || unit === "piece") return kb ? qty * kb.sg : qty;
+  if (kb && unit === kb.su) return kb ? qty * kb.sg : qty;
+  return qty;
+}
+
+function _fromGrams(grams, unit, kb) {
+  if (unit === "g") return grams;
+  if (unit === "oz") return grams / 28.3495;
+  if (unit === "serving" || unit === "piece") return kb && kb.sg ? grams / kb.sg : grams;
+  if (kb && unit === kb.su) return kb && kb.sg ? grams / kb.sg : grams;
+  return grams;
+}
+
+function _editServings(row, qty, unit) {
+  const kbStr = row.dataset.editKb;
+  if (kbStr) {
+    const kb = JSON.parse(kbStr);
+    const grams = _toGrams(qty, unit, kb);
+    const servings = kb.sg ? grams / kb.sg : 0;
+    return { cal: Math.round(kb.cal * servings), prot: Math.round(kb.prot * servings * 10) / 10, carb: Math.round(kb.carb * servings * 10) / 10, fat: Math.round(kb.fat * servings * 10) / 10 };
+  }
+  const fb = JSON.parse(row.dataset.editFallback);
+  const ratio = fb.qty ? qty / fb.qty : 0;
+  return { cal: Math.round(fb.cal * ratio), prot: Math.round(fb.prot * ratio * 10) / 10, carb: Math.round(fb.carb * ratio * 10) / 10, fat: Math.round(fb.fat * ratio * 10) / 10 };
+}
+
+function recalcEditFood(input) {
+  const row = input.closest(".food-row");
+  const qtyInput = row.querySelector(".ef-qty");
+  const unitSel = row.querySelector(".ef-unit");
+  const newUnit = unitSel.value;
+  const prevUnit = unitSel.dataset.prev || newUnit;
+
+  if (input === unitSel && prevUnit !== newUnit) {
+    const kb = row.dataset.editKb ? JSON.parse(row.dataset.editKb) : null;
+    const oldQty = parseFloat(qtyInput.value) || 0;
+    const grams = _toGrams(oldQty, prevUnit, kb);
+    const converted = _fromGrams(grams, newUnit, kb);
+    const rounded = Math.round(converted);
+    qtyInput.value = Math.abs(converted - rounded) < 0.1 ? rounded : Math.round(converted * 100) / 100;
+  }
+  unitSel.dataset.prev = newUnit;
+
+  const qty = parseFloat(qtyInput.value) || 0;
+  const m = _editServings(row, qty, newUnit);
+  row.querySelector(".ef-preview").innerHTML = `
+    <span class="macro-pill cal">${m.cal} kcal</span>
+    <span class="macro-pill prot">P ${m.prot}g</span>
+    <span class="macro-pill carb">C ${m.carb}g</span>
+    <span class="macro-pill fat">F ${m.fat}g</span>
+  `;
+}
+
+async function saveEditFood(btn, originalName) {
+  const row = btn.closest(".food-row");
+  const qty = parseFloat(row.querySelector(".ef-qty").value) || 0;
+  const unit = row.querySelector(".ef-unit").value;
+  const m = _editServings(row, qty, unit);
+  const body = {
+    original_name: originalName,
+    day: foodLogDate,
+    name: row.querySelector(".ef-name").value.trim(),
+    meal_time: row.querySelector(".ef-slot").value,
+    quantity_amount: qty,
+    quantity_unit: unit,
+    calories: m.cal,
+    protein_g: m.prot,
+    carbs_g: m.carb,
+    fat_g: m.fat,
+  };
+  if (!body.name) { alert("Food name is required."); return; }
+  const result = await api("POST", "/log/edit-food", body);
+  if (result.edited) {
+    showNotify("Updated " + result.food_name + ".");
+    refreshData();
+  } else {
+    alert(result.error || "Could not edit food.");
+  }
+}
+
+// --- EXERCISE ---
+let exerciseDate = today();
+
+function formatDateLabel(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  const opts = { weekday: "long", month: "short", day: "numeric" };
+  const label = d.toLocaleDateString("en-US", opts);
+  const todayTag = dateStr === today() ? '<span class="today-tag">Today</span>' : "";
+  return label + todayTag;
+}
+
+function updateExerciseDateUI() {
+  document.getElementById("exDateLabel").innerHTML = formatDateLabel(exerciseDate);
+  document.getElementById("exDatePicker").value = exerciseDate;
+}
+
+function exerciseDateShift(delta) {
+  const d = new Date(exerciseDate + "T00:00:00");
+  d.setDate(d.getDate() + delta);
+  exerciseDate = d.toISOString().slice(0, 10);
+  updateExerciseDateUI();
+  refreshExercises();
+}
+
+function exerciseDatePick(val) {
+  if (!val) return;
+  exerciseDate = val;
+  updateExerciseDateUI();
+  refreshExercises();
+}
+
+function exerciseDateGoToday() {
+  exerciseDate = today();
+  updateExerciseDateUI();
+  refreshExercises();
+}
+
+async function refreshExercises() {
+  updateExerciseDateUI();
+  const exercises = await api("GET", "/exercises/" + exerciseDate);
+  const container = document.getElementById("exerciseList");
+  const isEmpty = !exercises.length;
+  const dayLabel = exerciseDate === today() ? "today" : "this day";
+  if (isEmpty) {
+    container.innerHTML = `<div class="empty-slot">No exercises logged ${dayLabel}</div>`;
+    return;
+  }
+  container.innerHTML = exercises.map((e, idx) => {
+    const groups = e.set_groups || [];
+    const pills = groups.map(g => {
+      const w = g.weight ? `<span class="set-val">${g.weight}</span> x ` : "";
+      const prefix = g.count > 1 ? `<span class="set-label">${g.count} sets</span>` : "";
+      return `<span class="set-pill">${prefix} ${w}<span class="set-val">${g.reps}</span> <span class="set-label">reps</span></span>`;
+    }).join("");
+    const dur = e.duration_min ? `<div class="ex-dur">${e.duration_min} min</div>` : "";
+    return `
+    <div class="exercise-item">
+      <div class="ex-header">
+        <span class="ex-name">${esc(e.name)}</span>
+        <div style="display:flex;align-items:center;gap:0.4rem">
+          <span class="ex-type">${esc(e.exercise_type)}</span>
+          <button class="ex-action" title="Edit" onclick="editExercise(${idx})">&#9998;</button>
+          <button class="ex-action ex-delete" title="Delete" onclick="deleteExercise(${idx})">&#10005;</button>
+        </div>
+      </div>
+      ${pills ? `<div class="ex-sets">${pills}</div>` : ""}
+      ${dur}
+    </div>`;
+  }).join("");
+  window._exerciseCache = exercises;
+}
+
+// --- EXERCISE NAME AUTOCOMPLETE ---
+let _exSearchTimer = null;
+
+function searchExercises(input) {
+  clearTimeout(_exSearchTimer);
+  const dropdown = document.getElementById("exNameResults");
+  _exSearchTimer = setTimeout(async () => {
+    let results;
+    try {
+      results = await api("GET", "/exercise-search?q=" + encodeURIComponent(input.value.trim()));
+    } catch (e) {
+      dropdown.style.display = "none";
+      return;
+    }
+    if (!results.length) {
+      dropdown.style.display = "none";
+      return;
+    }
+    dropdown.textContent = "";
+    for (const r of results) {
+      const row = document.createElement("div");
+      row.style.cssText = "cursor:pointer;padding:0.4rem 0.5rem;display:flex;"
+        + "align-items:baseline;gap:0.4rem;";
+
+      const name = document.createElement("span");
+      name.textContent = r.name;
+      name.style.fontWeight = "500";
+      row.appendChild(name);
+
+      // "Recent" marks something the user has logged before.
+      const tag = document.createElement("span");
+      tag.textContent = r.recent ? "recent" : (r.muscle_group || r.exercise_type);
+      tag.style.cssText = "font-size:0.7rem;color:" + (r.recent ? "var(--primary)" : "var(--text2)");
+      row.appendChild(tag);
+
+      row.addEventListener("click", () => selectExercise(r));
+      dropdown.appendChild(row);
+    }
+    dropdown.style.display = "block";
+  }, 150);
+}
+
+function selectExercise(r) {
+  document.getElementById("exName").value = r.name;
+  // Picking a known exercise also sets its type, the way choosing a food fills macros.
+  if (r.exercise_type) {
+    const sel = document.getElementById("exType");
+    if ([...sel.options].some(o => o.value === r.exercise_type)) sel.value = r.exercise_type;
+  }
+  document.getElementById("exNameResults").style.display = "none";
+}
+
+// --- SET ROWS ---
+// One builder for every site that renders set rows (initial form, add, duplicate,
+// edit, cancel) so captions and the remove button can't drift out of sync.
+let _weightUnit = "lbs";
+
+function _setRow(num, reps, weight) {
+  const row = document.createElement("div");
+  row.className = "set-row";
+  const r = document.createElement("span");
+  r.className = "set-num";
+  r.textContent = num;
+
+  const repsWrap = document.createElement("span");
+  repsWrap.className = "field-unit";
+  const repsIn = document.createElement("input");
+  Object.assign(repsIn, { type: "number", className: "set-reps", placeholder: "Reps", min: "1" });
+  if (reps !== undefined && reps !== null && reps !== "") repsIn.value = reps;
+  const repsCap = document.createElement("span");
+  repsCap.className = "unit-cap";
+  repsCap.textContent = "reps";
+  repsWrap.append(repsIn, repsCap);
+
+  const wWrap = document.createElement("span");
+  wWrap.className = "field-unit";
+  const wIn = document.createElement("input");
+  Object.assign(wIn, { type: "number", className: "set-weight", placeholder: "Weight", min: "0", step: "any" });
+  if (weight !== undefined && weight !== null && weight !== "") wIn.value = weight;
+  const wCap = document.createElement("span");
+  wCap.className = "unit-cap unit-weight";
+  wCap.textContent = _weightUnit;
+  wWrap.append(wIn, wCap);
+
+  // Every row gets a remove button — previously the first row had none, which read
+  // as a bug rather than as "you need at least one set".
+  const del = document.createElement("button");
+  del.className = "remove-set";
+  del.title = "Remove set";
+  del.innerHTML = "&times;";
+  del.addEventListener("click", () => removeExerciseSet(del));
+
+  row.append(r, repsWrap, wWrap, del);
+  return row;
+}
+
+function _renumberSets() {
+  document.querySelectorAll("#setList .set-row").forEach((row, i) => {
+    row.querySelector(".set-num").textContent = i + 1;
+  });
+}
+
+/** Rebuild the set list from details (or a single blank row when empty). */
+function resetSetList(details) {
+  const list = document.getElementById("setList");
+  list.textContent = "";
+  const rows = (details && details.length) ? details : [{}];
+  rows.forEach((d, i) => list.appendChild(_setRow(i + 1, d.reps, d.weight)));
+}
+
+function refreshWeightUnitCaptions() {
+  document.querySelectorAll("#setList .unit-weight").forEach(el => {
+    el.textContent = _weightUnit;
+  });
+}
+
+async function loadWeightUnit() {
+  try {
+    const p = await api("GET", "/profile");
+    _weightUnit = p.unit_system === "metric" ? "kg" : "lbs";
+    refreshWeightUnitCaptions();
+  } catch (e) { /* keep the lbs default */ }
+}
+
+function addExerciseSet() {
+  const list = document.getElementById("setList");
+  list.appendChild(_setRow(list.querySelectorAll(".set-row").length + 1));
+}
+
+function duplicateLastSet() {
+  const rows = document.querySelectorAll("#setList .set-row");
+  const last = rows[rows.length - 1];
+  const reps = last ? last.querySelector(".set-reps").value : "";
+  const weight = last ? last.querySelector(".set-weight").value : "";
+  const list = document.getElementById("setList");
+  list.appendChild(_setRow(rows.length + 1, reps, weight));
+}
+
+function removeExerciseSet(btn) {
+  const list = document.getElementById("setList");
+  const row = btn.closest(".set-row");
+  const rows = [...list.querySelectorAll(".set-row")];
+  const repsIn = row.querySelector(".set-reps");
+  const weightIn = row.querySelector(".set-weight");
+  const reps = repsIn.value;
+  const weight = weightIn.value;
+
+  if (rows.length === 1) {
+    // Last remaining row: clear it in place instead of removing, so the form resets
+    // to "nothing logged yet" without leaving an empty gap.
+    if (!reps && !weight) return;          // already blank — nothing to undo
+    repsIn.value = "";
+    weightIn.value = "";
+    showUndo("Cleared set 1", () => {
+      const r = document.querySelector("#setList .set-reps");
+      const w = document.querySelector("#setList .set-weight");
+      if (r) r.value = reps;
+      if (w) w.value = weight;
+    });
+    return;
+  }
+
+  const idx = rows.indexOf(row);
+  row.remove();
+  _renumberSets();
+
+  showUndo(`Removed set ${idx + 1}`, () => {
+    const current = [...list.querySelectorAll(".set-row")];
+    const restored = _setRow(idx + 1, reps, weight);
+    if (idx < current.length) list.insertBefore(restored, current[idx]);
+    else list.appendChild(restored);
+    _renumberSets();
+  });
+}
+
+async function logExerciseForm() {
+  const name = document.getElementById("exName").value.trim();
+  if (!name) return;
+  const type = document.getElementById("exType").value;
+  const dur = document.getElementById("exDuration").value;
+  const setRows = document.querySelectorAll("#setList .set-row");
+  const setDetails = [];
+  setRows.forEach(row => {
+    const reps = parseInt(row.querySelector(".set-reps").value);
+    const weight = parseFloat(row.querySelector(".set-weight").value);
+    if (reps > 0) setDetails.push({ reps, weight: weight > 0 ? weight : null });
+  });
+  if (editingExercise) {
+    await api("DELETE", `/exercises/${editingExercise.day}/${encodeURIComponent(editingExercise.name)}`);
+  }
+  setThinking(true);
+  const result = await api("POST", "/exercises", {
+    name,
+    exercise_type: type,
+    set_details: setDetails,
+    duration_min: dur ? parseFloat(dur) : null,
+    day: exerciseDate,
+  });
+  setThinking(false);
+  const parts = [result.name];
+  if (result.sets_display) parts.push(result.sets_display);
+  if (result.duration_min) parts.push(result.duration_min + " min");
+  showNotify((editingExercise ? "Updated: " : "Logged: ") + parts.join(" — "));
+  cancelEdit();
+  refreshExercises();
+  _checkAutoComplete();
+}
+
+let editingExercise = null;
+window._exerciseCache = [];
+
+async function deleteExercise(idx) {
+  const e = window._exerciseCache[idx];
+  if (!e) return;
+  const result = await api("DELETE", `/exercises/${exerciseDate}/${encodeURIComponent(e.name)}`);
+  if (!result.deleted) {
+    addAiMsg("system", result.error || "Could not delete " + e.name + ".");
+    return;
+  }
+  showNotify("Deleted exercise: " + result.name + ".");
+  refreshExercises();
+  const restoreData = result.restore_data;
+  showUndo(`Deleted "${result.name}"`, async () => {
+    await api("POST", "/exercises/restore", { exercise_data: restoreData });
+    showNotify("Restored " + result.name + ".");
+    refreshExercises();
+  });
+}
+
+function editExercise(idx) {
+  const e = window._exerciseCache[idx];
+  if (!e) return;
+  editingExercise = { name: e.name, day: exerciseDate };
+  document.getElementById("exName").value = e.name;
+  document.getElementById("exType").value = e.exercise_type;
+  document.getElementById("exDuration").value = e.duration_min || "";
+  resetSetList(e.set_details || []);
+  const btn = document.getElementById("exSubmitBtn");
+  btn.textContent = "Confirm Changes";
+  btn.classList.remove("btn-primary");
+  btn.classList.add("btn-success");
+  document.getElementById("exCancelBtn").style.display = "";
+  clearTimeout(_exSearchTimer);
+  document.getElementById("exNameResults").style.display = "none";
+  document.getElementById("exName").scrollIntoView({ behavior: "smooth" });
+  document.getElementById("exName").focus();
+}
+
+function cancelEdit() {
+  editingExercise = null;
+  document.getElementById("exName").value = "";
+  document.getElementById("exType").value = "strength";
+  document.getElementById("exDuration").value = "";
+  resetSetList([]);
+  const btn = document.getElementById("exSubmitBtn");
+  btn.textContent = "Log Exercise";
+  btn.classList.remove("btn-success");
+  btn.classList.add("btn-primary");
+  document.getElementById("exCancelBtn").style.display = "none";
+}
+
+// --- CALENDAR ---
+let _calendarData = null;
+let _selectedCalDate = null;
+let _calWeekOffset = 0;
+
+function _localDateStr(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+function _mondayOf(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  const dow = d.getDay() === 0 ? 6 : d.getDay() - 1;
+  d.setDate(d.getDate() - dow);
+  return d;
+}
+
+function _addDays(d, n) {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
+}
+
+function calendarWeekShift(dir) {
+  _calWeekOffset += dir;
+  _renderCalendar();
+}
+
+function _dayLabel(label) {
+  return label.replace(/s$/i, "") + " Day";
+}
+
+function _fuzzyMatchExercise(plannedName, logged) {
+  const target = plannedName.toLowerCase().trim();
+  const targetWords = target.split(/\s+/);
+  let best = null, bestScore = 0;
+  for (const ex of logged) {
+    const name = ex.name.toLowerCase().trim();
+    if (name === target) return ex;
+    const nameWords = name.split(/\s+/);
+    const overlap = targetWords.filter(tw => nameWords.some(nw => nw.startsWith(tw) || tw.startsWith(nw)));
+    if (!overlap.length) continue;
+    const maxWords = Math.max(targetWords.length, nameWords.length);
+    const score = overlap.length / maxWords;
+    if (score > bestScore) { bestScore = score; best = ex; }
+  }
+  return bestScore >= 0.5 ? best : null;
+}
+
+// Undoing a completion has to stick. Without this, the day's exercises are still
+// logged, so the next auto-complete check immediately marks it done again and the
+// undo looks like it did nothing.
+function _autoCompleteKey(d) { return "ac_undone_" + d; }
+
+function suppressAutoComplete() {
+  try { localStorage.setItem(_autoCompleteKey(today()), "1"); } catch (e) {}
+}
+
+function _autoCompleteSuppressed() {
+  try { return localStorage.getItem(_autoCompleteKey(today())) === "1"; } catch (e) { return false; }
+}
+
+async function _checkAutoComplete() {
+  if (exerciseDate !== today()) return;
+  if (_autoCompleteSuppressed()) return;
+  const cal = await api("GET", "/calendar");
+  if (!cal.active) return;
+  const todayEntry = cal.entries.find(e => e.is_today);
+  if (!todayEntry || todayEntry.status !== "planned" || todayEntry.is_rest) return;
+  if (!todayEntry.exercises.length) return;
+  const logged = await api("GET", `/exercises/${today()}`);
+  const matched = new Set();
+  for (const planned of todayEntry.exercises) {
+    const remaining = logged.filter(l => !matched.has(l.name));
+    const match = _fuzzyMatchExercise(planned.name, remaining);
+    if (!match) return;
+    let totalSets = 0;
+    for (const l of logged) { if (_fuzzyMatchExercise(planned.name, [l])) totalSets += l.set_details.length; }
+    if (totalSets < planned.sets) return;
+    matched.add(match.name);
+  }
+  await api("POST", "/calendar/complete");
+  showNotify("All exercises done — day marked complete!");
+  refreshCalendar();
+}
+
+function _buildExerciseRows(planned, logged) {
+  const matched = new Set();
+  return planned.map(ex => {
+    const remaining = logged.filter(l => !matched.has(l.name));
+    const match = _fuzzyMatchExercise(ex.name, remaining);
+    if (match) matched.add(match.name);
+    const plannedLabel = `${ex.sets}x${ex.reps}`;
+    if (!match) {
+      return `<div class="today-exercise">
+        <span class="ex-name">${esc(ex.name)}</span>
+        <span class="ex-status"></span>
+        <span class="sets-reps">${plannedLabel}</span>
+      </div>`;
+    }
+    let done = 0;
+    for (const l of logged) {
+      if (_fuzzyMatchExercise(ex.name, [l])) done += l.set_details.length;
+    }
+    const complete = done >= ex.sets;
+    return `<div class="today-exercise">
+      <span class="ex-name">${esc(ex.name)}</span>
+      <span class="ex-status ${complete ? 'is-done' : 'is-partial'}">${done}/${ex.sets} sets</span>
+      <span class="sets-reps">${plannedLabel}</span>
+    </div>`;
+  }).join("");
+}
+
+function _buildDayDetail(entry, isToday, logged) {
+  const dateLabel = new Date(entry.date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+  const prefix = isToday ? "Today" : dateLabel;
+  const dayName = _dayLabel(entry.label);
+
+  if (entry.status === "skipped") {
+    let html = `<div class="today-workout" style="border-left-color:var(--yellow)"><h3 style="color:var(--yellow)">${prefix}: Skipped</h3><p style="color:var(--text2)">${esc(dayName)} was skipped.</p>`;
+    if (isToday) html += `<button class="btn-outline" style="margin-top:0.5rem;font-size:0.8rem" onclick="calendarUndoPersistent()">Undo Skip</button>`;
+    return html + `</div>`;
+  }
+  if (entry.status === "completed") {
+    const rows = _buildExerciseRows(entry.exercises, logged);
+    let html = `<div class="today-workout" style="border-left-color:var(--green)"><h3 style="color:var(--green)">${prefix}: ${esc(dayName)} — Done!</h3>${rows}`;
+    if (isToday) html += `<button class="btn-outline" style="margin-top:0.5rem;font-size:0.8rem" onclick="calendarUndoPersistent()">Undo Complete</button>`;
+    return html + `</div>`;
+  }
+  if (entry.is_rest) {
+    return `<div class="today-workout"><h3>${prefix}: Rest Day</h3><p style="color:var(--text2)">Recovery time.</p></div>`;
+  }
+  const rows = _buildExerciseRows(entry.exercises, logged);
+  return `
+    <div class="today-workout">
+      <h3>${prefix}: ${esc(dayName)}</h3>
+      ${rows}
+    </div>
+  `;
+}
+
+function selectCalendarDay(date) {
+  _selectedCalDate = date;
+  _renderCalendar();
+}
+
+function calendarGoToday() {
+  _selectedCalDate = null;
+  _calWeekOffset = 0;
+  _renderCalendar();
+}
+
+async function _renderCalendar() {
+  const data = _calendarData;
+  if (!data) return;
+  const container = document.getElementById("calendarContent");
+  const todayEntry = data.entries.find(e => e.is_today);
+  const selectedDate = _selectedCalDate || (todayEntry ? todayEntry.date : null);
+  const selectedEntry = selectedDate ? data.entries.find(e => e.date === selectedDate) : todayEntry;
+  const isToday = selectedEntry && selectedEntry.is_today;
+  const dayNames = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+  let detailHtml = "";
+  if (selectedEntry && !selectedEntry.is_rest) {
+    let logged = [];
+    try { logged = await api("GET", `/exercises/${selectedEntry.date}`); } catch {}
+    detailHtml = _buildDayDetail(selectedEntry, isToday, logged);
+  } else if (selectedEntry) {
+    detailHtml = _buildDayDetail(selectedEntry, isToday, []);
+  }
+
+  const entryMap = {};
+  for (const e of data.entries) entryMap[e.date] = e;
+
+  const windowStart = _addDays(_mondayOf(data.today), _calWeekOffset * 14);
+  let weeksHtml = "";
+  for (let w = 0; w < 2; w++) {
+    let row = "";
+    for (let d = 0; d < 7; d++) {
+      const cellDate = _addDays(windowStart, w * 7 + d);
+      const ds = _localDateStr(cellDate);
+      const dayName = dayNames[d];
+      const e = entryMap[ds];
+      if (e) {
+        const cls = [
+          "day-card",
+          e.is_today ? "today" : "",
+          e.date === selectedDate ? "selected" : "",
+          e.is_rest ? "rest" : "",
+          e.status === "completed" ? "completed" : "",
+          e.status === "skipped" ? "skipped" : "",
+        ].filter(Boolean).join(" ");
+        const statusBadge = e.status === "completed" ? '<div class="day-status completed">Done</div>'
+          : e.status === "skipped" ? '<div class="day-status skipped">Skipped</div>' : "";
+        row += `<div class="${cls}" onclick="selectCalendarDay('${e.date}')">
+          <div class="day-date">${dayName} ${e.date.slice(5)}</div>
+          <div class="day-label ${e.is_rest ? 'rest-label' : ''}">${esc(e.label)}</div>
+          ${!e.is_rest ? `<div class="day-exercises">${e.exercises.slice(0, 3).map(ex => esc(ex.name)).join("<br>")}</div>` : ""}
+          ${statusBadge}
+        </div>`;
+      } else {
+        row += `<div class="day-card empty"><div class="day-date">${dayName} ${ds.slice(5)}</div></div>`;
+      }
+    }
+    weeksHtml += `<div class="week-grid">${row}</div>`;
+  }
+
+  const alignOptions = (data.rotation || []).map(r =>
+    `<option value="${r.index}" ${todayEntry && todayEntry.label === r.label ? 'selected' : ''}>${esc(r.label)}${r.is_rest ? ' (Rest)' : ''}</option>`
+  ).join("");
+
+  const missedDays = data.entries.filter(e => !e.is_today && e.date < data.today && e.status === "planned").length;
+
+  container.innerHTML = `
+    <div class="calendar-controls">
+      <span style="font-weight:600;font-size:0.95rem;">${esc(data.plan_name)}</span>
+      <div class="calendar-actions">
+        ${calendarPendingUndo().length ? `<button class="btn-outline" style="font-size:0.8rem;border-color:var(--green);color:var(--green)" onclick="confirmAllChanges()">Confirm Changes (${calendarPendingUndo().length})</button>` : ""}
+        ${todayEntry && todayEntry.status === "planned" ? '<button class="btn-outline" onclick="calendarSkip()">Skip Today</button>' : ""}
+        ${todayEntry && todayEntry.status === "planned" ? '<button class="btn-outline" onclick="calendarPushBack()">Push Back</button>' : ""}
+        ${missedDays > 0 ? `<button class="btn-outline" style="font-size:0.8rem" onclick="calendarSkipToToday()">Skip to Today (${missedDays})</button>` : ""}
+        ${missedDays > 0 ? `<button class="btn-outline" style="font-size:0.8rem" onclick="calendarPushBackToToday()">Push Back to Today (${missedDays})</button>` : ""}
+        ${todayEntry && todayEntry.status === "planned" && !todayEntry.is_rest ? '<button class="btn-success" onclick="calendarComplete()">Complete</button>' : ""}
+        <button class="btn-outline" style="font-size:0.8rem;" onclick="editActivePlan()">Edit Plan</button>
+        <button class="btn btn-danger" style="font-size:0.8rem;" onclick="changePlan()">Change Plan</button>
+        ${calendarPendingUndo().length ? `<button class="btn-outline" style="font-size:0.8rem;border-color:var(--yellow);color:var(--yellow)" onclick="discardAllChanges()">Discard Changes (${calendarPendingUndo().length})</button>` : ""}
+      </div>
+    </div>
+    <div style="margin-bottom:0.8rem;display:flex;align-items:center;gap:0.5rem;">
+      <label style="font-size:0.85rem;color:var(--text2)">Align to:</label>
+      <select id="alignSelect" style="padding:0.3rem 0.5rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:6px;color:var(--text);font-size:0.85rem;">
+        ${alignOptions}
+      </select>
+      <button class="btn-outline" style="font-size:0.8rem" onclick="calendarAlign()">Align</button>
+    </div>
+    ${detailHtml}
+    <div class="calendar-nav" style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
+      <button class="nav-arrow" onclick="calendarWeekShift(-1)">&larr;</button>
+      <h3 style="margin:0;">Schedule</h3>
+      <button class="nav-arrow" onclick="calendarWeekShift(1)">&rarr;</button>
+      ${_calWeekOffset !== 0 ? '<button class="today-btn" onclick="calendarGoToday()">Today</button>' : ""}
+    </div>
+    ${weeksHtml}
+  `;
+}
+
+async function refreshCalendar() {
+  _planBuilderSnapshot = null;
+  _calWeekOffset = 0;
+  const data = await api("GET", "/calendar");
+  const container = document.getElementById("calendarContent");
+  if (!data.active) {
+    _calendarData = null;
+    const plans = await api("GET", "/plans");
+    container.innerHTML = `
+      <div class="no-plan">
+        <h3>No active workout plan</h3>
+        <p>Choose a plan to get started:</p>
+        <div class="plan-picker">
+          ${plans.map(p => `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:0.3rem;">
+            <button class="plan-btn" data-pid="${esc(p.id)}" onclick="activatePlan(this.dataset.pid)">${esc(p.name)}</button>
+            <button class="btn-outline" style="font-size:0.7rem;padding:0.15rem 0.5rem;" data-pid="${esc(p.id)}" onclick="editPlan(this.dataset.pid)">Customize</button>
+          </div>`).join("")}
+          <button class="plan-btn" style="border-color:var(--primary);color:var(--primary)" onclick="showPlanBuilder()">+ Create Custom Plan</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  _calendarData = data;
+  _renderCalendar();
+}
+
+async function activatePlan(planId) {
+  if (!confirm("Are you sure you want to change plans? This will reset your calendar and delete your current schedule preferences.")) return;
+  await api("POST", "/calendar/activate", { plan_id: planId });
+  refreshCalendar();
+  _checkAutoComplete();
+}
+
+async function calendarSkip() {
+  await api("POST", "/calendar/skip");
+  refreshCalendar();
+  showUndo("Skipped today", async () => { await api("POST", "/calendar/undo"); refreshCalendar(); }, UNDO_CALENDAR);
+}
+
+async function calendarPushBack() {
+  await api("POST", "/calendar/push-back");
+  refreshCalendar();
+  showUndo("Pushed back today", async () => { await api("POST", "/calendar/undo"); refreshCalendar(); }, UNDO_CALENDAR);
+}
+
+async function calendarSkipToToday() {
+  const result = await api("POST", "/calendar/skip-to-today");
+  refreshCalendar();
+  showUndo(`Skipped ${result.skipped_count} missed day(s)`, async () => { await api("POST", "/calendar/undo"); refreshCalendar(); }, UNDO_CALENDAR);
+}
+
+async function calendarPushBackToToday() {
+  const result = await api("POST", "/calendar/push-back-to-today");
+  refreshCalendar();
+  showUndo(`Pushed back ${result.pushed_count} missed day(s)`, async () => { await api("POST", "/calendar/undo"); refreshCalendar(); }, UNDO_CALENDAR);
+}
+
+async function calendarAlign() {
+  const idx = parseInt(document.getElementById("alignSelect").value);
+  await api("POST", "/calendar/align", { day_index: idx });
+  refreshCalendar();
+  showUndo("Aligned calendar", async () => { await api("POST", "/calendar/undo"); refreshCalendar(); }, UNDO_CALENDAR);
+}
+
+async function calendarComplete() {
+  try { localStorage.removeItem(_autoCompleteKey(today())); } catch (e) {}
+  await api("POST", "/calendar/complete");
+  refreshCalendar();
+  showUndo("Marked complete", async () => { suppressAutoComplete(); await api("POST", "/calendar/undo"); refreshCalendar(); }, UNDO_CALENDAR);
+}
+
+async function calendarUndoPersistent() {
+  suppressAutoComplete();
+  await api("POST", "/calendar/undo");
+  clearTimeout(undoTimer);
+  // Drop only the calendar entries; an unrelated pending undo stays available.
+  undoStack = undoStack.filter(e => e.scope !== UNDO_CALENDAR);
+  _syncUndoToast();
+  refreshCalendar();
+}
+
+async function discardAllChanges() {
+  const pending = calendarPendingUndo();
+  if (!pending.length) return;
+  if (!confirm("Are you sure you want to discard all changes? This will undo "
+      + pending.length + " calendar action(s).")) return;
+  clearTimeout(undoTimer);
+  // Newest first, and only calendar entries — a pending food/exercise undo must
+  // survive untouched.
+  for (let i = pending.length - 1; i >= 0; i--) {
+    await pending[i].action();
+  }
+  undoStack = undoStack.filter(e => e.scope !== UNDO_CALENDAR);
+  _syncUndoToast();
+  refreshCalendar();
+  refreshLog();
+  refreshExercises();
+}
+
+function confirmAllChanges() {
+  if (!calendarPendingUndo().length) return;
+  clearTimeout(undoTimer);
+  // Accepting the schedule changes drops their undo entries, but leaves any other
+  // pending undo (a deleted food, say) still available.
+  undoStack = undoStack.filter(e => e.scope !== UNDO_CALENDAR);
+  _syncUndoToast();
+  refreshCalendar();
+}
+
+async function changePlan() {
+  const plans = await api("GET", "/plans");
+  const container = document.getElementById("calendarContent");
+  const customPlans = plans.filter(p => !["ppl","upper_lower","ppl_no_rest"].includes(p.id));
+  container.innerHTML = `
+    <div class="no-plan">
+      <h3>Choose a workout plan</h3>
+      <p style="color:var(--text2);font-size:0.85rem;margin-bottom:0.8rem">Changing plans will reset your calendar and delete current schedule preferences.</p>
+      <div class="plan-picker">
+        ${plans.map(p => `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:0.3rem;">
+          <button class="plan-btn" data-pid="${esc(p.id)}" onclick="activatePlan(this.dataset.pid)">${esc(p.name)}</button>
+          <button class="btn-outline" style="font-size:0.7rem;padding:0.15rem 0.5rem;" data-pid="${esc(p.id)}" onclick="editPlan(this.dataset.pid)">Customize</button>
+        </div>`).join("")}
+        <button class="plan-btn" style="border-color:var(--primary);color:var(--primary)" onclick="showPlanBuilder()">+ Create Custom Plan</button>
+      </div>
+      ${customPlans.length ? `<div style="margin-top:1rem;"><p style="color:var(--text2);font-size:0.8rem;margin-bottom:0.4rem;">Your custom plans:</p>${customPlans.map(p => `<span style="font-size:0.8rem;color:var(--text2);margin-right:0.8rem;">${esc(p.name)} <button class="btn-outline" style="font-size:0.7rem;padding:0.1rem 0.4rem;" data-pid="${esc(p.id)}" onclick="editPlan(this.dataset.pid)">Edit</button> <button class="btn-outline" style="font-size:0.7rem;padding:0.1rem 0.4rem;border-color:var(--red);color:var(--red)" data-pid="${esc(p.id)}" data-pname="${esc(p.name)}" onclick="deleteCustomPlan(this.dataset.pid,this.dataset.pname)">Delete</button></span>`).join("")}</div>` : ""}
+      <button class="btn-outline" style="margin-top:1rem;font-size:0.85rem" onclick="refreshCalendar()">Back</button>
+    </div>
+  `;
+}
+
+async function deleteCustomPlan(planId, planName) {
+  if (!confirm(`Delete custom plan "${planName}"?`)) return;
+  await api("DELETE", `/plans/${planId}`);
+  changePlan();
+}
+
+let _planBuilderDays = [];
+let _planBuilderSnapshot = null;
+let _planBuilderUndoStack = [];
+let _editingPlanId = null;
+let _editingPlanIsPreset = false;
+let _editingPresetSourceId = null;
+let _planDragIdx = null;
+
+function _snapshotPlanBuilder() {
+  _planBuilderSnapshot = JSON.stringify(_planBuilderDays);
+  _planBuilderUndoStack = [];
+}
+function _isPlanBuilderDirty() {
+  if (!_planBuilderSnapshot) return false;
+  _syncPlanBuilderInputs();
+  return JSON.stringify(_planBuilderDays) !== _planBuilderSnapshot;
+}
+function _pushPlanUndo() {
+  _syncPlanBuilderInputs();
+  _planBuilderUndoStack.push(JSON.parse(JSON.stringify(_planBuilderDays)));
+}
+function undoPlanBuilder() {
+  if (!_planBuilderUndoStack.length) return;
+  _planBuilderDays = _planBuilderUndoStack.pop();
+  _renderPlanBuilder();
+}
+function discardPlanBuilder() {
+  if (!_planBuilderSnapshot) return;
+  if (!confirm("Discard all changes to this plan?")) return;
+  _planBuilderDays = JSON.parse(_planBuilderSnapshot);
+  _planBuilderUndoStack = [];
+  _renderPlanBuilder();
+}
+function _syncPlanBuilderInputs() {
+  const cards = document.querySelectorAll(".plan-day-card");
+  cards.forEach((card, di) => {
+    if (di >= _planBuilderDays.length) return;
+    const day = _planBuilderDays[di];
+    const labelInput = card.querySelector(".day-header input[placeholder='Day label']");
+    if (labelInput) day.label = labelInput.value;
+    if (!day.is_rest) {
+      card.querySelectorAll(".plan-day-ex").forEach((row, ei) => {
+        if (ei >= day.exercises.length) return;
+        const inputs = row.querySelectorAll("input");
+        if (inputs[0]) day.exercises[ei].name = inputs[0].value;
+        if (inputs[1]) day.exercises[ei].sets = +inputs[1].value;
+        if (inputs[2]) day.exercises[ei].reps = +inputs[2].value;
+      });
+    }
+  });
+}
+function _isPlanBuilderOpen() {
+  return _planBuilderSnapshot !== null;
+}
+
+function showPlanBuilder() {
+  _editingPlanId = null;
+  _editingPlanIsPreset = false;
+  _editingPresetSourceId = null;
+  _planBuilderDays = [{ label: "Day 1", is_rest: false, exercises: [{ name: "", sets: 3, reps: 10 }] }];
+  _snapshotPlanBuilder();
+  _renderPlanBuilder();
+}
+
+async function editPlan(planId) {
+  const plans = await api("GET", "/plans");
+  const plan = plans.find(p => p.id === planId);
+  if (!plan) return;
+  const presetIds = ["ppl", "upper_lower", "ppl_no_rest"];
+  _editingPlanIsPreset = presetIds.includes(planId);
+  _editingPlanId = _editingPlanIsPreset ? null : planId;
+  _editingPresetSourceId = _editingPlanIsPreset ? planId : null;
+  _planBuilderDays = plan.rotation.map(d => ({
+    label: d.label,
+    is_rest: d.is_rest,
+    exercises: d.exercises.map(e => ({ name: e.name, sets: e.sets, reps: e.reps })),
+  }));
+  _snapshotPlanBuilder();
+  _renderPlanBuilder(_editingPlanIsPreset ? plan.name + " (Custom)" : plan.name);
+}
+
+async function editActivePlan() {
+  if (!_calendarData) return;
+  editPlan(_calendarData.plan_id);
+}
+
+function _renderPlanBuilder(prefillName) {
+  const container = document.getElementById("calendarContent");
+  const isEditing = !!_editingPlanId;
+  const title = isEditing ? "Edit Plan" : (_editingPlanIsPreset ? "Customize Plan" : "Create Custom Plan");
+  const saveLabel = isEditing ? "Save Changes" : "Save Plan";
+  const daysHtml = _planBuilderDays.map((day, di) => {
+    const exHtml = day.is_rest ? "" : day.exercises.map((ex, ei) => `
+      <div class="plan-day-ex">
+        <input placeholder="Exercise name" value="${esc(ex.name)}" onchange="_planBuilderDays[${di}].exercises[${ei}].name=this.value">
+        <input class="narrow" type="number" min="1" value="${ex.sets}" onchange="_planBuilderDays[${di}].exercises[${ei}].sets=+this.value" title="Sets">
+        <span style="color:var(--text2);font-size:0.8rem">x</span>
+        <input class="narrow" type="number" min="1" value="${ex.reps}" onchange="_planBuilderDays[${di}].exercises[${ei}].reps=+this.value" title="Reps">
+        <button class="btn btn-danger" style="padding:0.2rem 0.4rem;font-size:0.75rem" onclick="removePlanExercise(${di},${ei})">x</button>
+      </div>
+    `).join("");
+    return `
+      <div class="plan-day-card" draggable="true" ondragstart="planDragStart(event,${di})" ondragover="planDragOver(event)" ondrop="planDrop(event,${di})" ondragend="planDragEnd()">
+        <div class="day-header">
+          <span class="drag-handle" title="Drag to reorder">&#x2630;</span>
+          <input value="${esc(day.label)}" placeholder="Day label" onchange="_planBuilderDays[${di}].label=this.value" style="flex:1">
+          <label style="font-size:0.8rem;color:var(--text2);display:flex;align-items:center;gap:0.3rem;cursor:pointer">
+            <input type="checkbox" ${day.is_rest ? "checked" : ""} onchange="togglePlanDayRest(${di},this.checked)"> Rest
+          </label>
+          <button class="btn-outline" style="font-size:0.7rem;padding:0.15rem 0.4rem" onclick="clonePlanDay(${di})">Clone</button>
+          <button class="btn btn-danger" style="font-size:0.7rem;padding:0.15rem 0.4rem" onclick="removePlanDay(${di})">Remove</button>
+        </div>
+        ${exHtml}
+        ${!day.is_rest ? `<button class="btn-outline" style="font-size:0.75rem;padding:0.2rem 0.5rem;margin-top:0.3rem" onclick="addPlanExercise(${di})">+ Exercise</button>` : ""}
+      </div>
+    `;
+  }).join("");
+
+  const nameVal = prefillName || document.getElementById("customPlanName")?.value || "";
+  container.innerHTML = `
+    <div class="plan-builder">
+      <h3>${title}</h3>
+      <div style="margin-bottom:0.8rem;">
+        <input id="customPlanName" placeholder="Plan name (e.g. My PPL)" value="${esc(nameVal)}" style="width:100%;padding:0.5rem;font-size:0.9rem;background:var(--surface2);border:1px solid var(--border,#e2e4ed);border-radius:8px;color:var(--text);">
+      </div>
+      <p style="color:var(--text2);font-size:0.8rem;margin-bottom:0.5rem">Days repeat in a cycle. Add as many as you need.</p>
+      ${daysHtml}
+      <div style="display:flex;gap:0.5rem;margin-top:0.6rem;flex-wrap:wrap;justify-content:center;">
+        <button class="btn-outline" onclick="addPlanDay()">+ Add Day</button>
+        <button class="btn-outline" onclick="addPlanRestDay()">+ Add Rest Day</button>
+        <button class="btn btn-primary" onclick="saveCustomPlan()">${saveLabel}</button>
+        ${_planBuilderUndoStack.length ? `<button class="btn-outline" style="border-color:var(--yellow);color:var(--yellow)" onclick="undoPlanBuilder()">Undo</button>` : ""}
+        ${_planBuilderSnapshot && JSON.stringify(_planBuilderDays) !== _planBuilderSnapshot ? `<button class="btn-outline" style="border-color:var(--red);color:var(--red)" onclick="discardPlanBuilder()">Discard Changes</button>` : ""}
+        ${_editingPresetSourceId ? `<button class="btn-outline" style="border-color:var(--yellow);color:var(--yellow)" onclick="resetPlanToDefault()">Reset to Default</button>` : ""}
+        <button class="btn-outline" onclick="refreshCalendar()">Cancel</button>
+      </div>
+    </div>
+  `;
+}
+
+function addPlanDay() {
+  _planBuilderDays.push({ label: `Day ${_planBuilderDays.length + 1}`, is_rest: false, exercises: [{ name: "", sets: 3, reps: 10 }] });
+  _renderPlanBuilder();
+}
+
+function addPlanRestDay() {
+  _planBuilderDays.push({ label: "Rest", is_rest: true, exercises: [] });
+  _renderPlanBuilder();
+}
+
+function removePlanDay(di) {
+  _pushPlanUndo();
+  _planBuilderDays.splice(di, 1);
+  _renderPlanBuilder();
+}
+
+function togglePlanDayRest(di, isRest) {
+  _pushPlanUndo();
+  _planBuilderDays[di].is_rest = isRest;
+  if (isRest) _planBuilderDays[di].exercises = [];
+  else if (!_planBuilderDays[di].exercises.length) _planBuilderDays[di].exercises = [{ name: "", sets: 3, reps: 10 }];
+  _renderPlanBuilder();
+}
+
+function addPlanExercise(di) {
+  _planBuilderDays[di].exercises.push({ name: "", sets: 3, reps: 10 });
+  _renderPlanBuilder();
+}
+
+function removePlanExercise(di, ei) {
+  _pushPlanUndo();
+  _planBuilderDays[di].exercises.splice(ei, 1);
+  _renderPlanBuilder();
+}
+
+function clonePlanDay(di) {
+  _pushPlanUndo();
+  const src = _planBuilderDays[di];
+  const copy = { label: src.label + " (Copy)", is_rest: src.is_rest, exercises: src.exercises.map(e => ({ ...e })) };
+  _planBuilderDays.splice(di + 1, 0, copy);
+  _renderPlanBuilder();
+}
+
+function planDragStart(e, di) {
+  _planDragIdx = di;
+  e.dataTransfer.effectAllowed = "move";
+  e.currentTarget.classList.add("dragging");
+}
+function planDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }
+function planDrop(e, di) {
+  e.preventDefault();
+  if (_planDragIdx === null || _planDragIdx === di) return;
+  _pushPlanUndo();
+  const [moved] = _planBuilderDays.splice(_planDragIdx, 1);
+  _planBuilderDays.splice(di, 0, moved);
+  _planDragIdx = null;
+  _renderPlanBuilder();
+}
+function planDragEnd() {
+  _planDragIdx = null;
+  document.querySelectorAll(".plan-day-card.dragging").forEach(el => el.classList.remove("dragging"));
+}
+
+async function resetPlanToDefault() {
+  if (!_editingPresetSourceId) return;
+  if (!confirm("Reset all days and exercises back to the original preset?")) return;
+  _pushPlanUndo();
+  const plans = await api("GET", "/plans");
+  const preset = plans.find(p => p.id === _editingPresetSourceId);
+  if (!preset) return;
+  _planBuilderDays = preset.rotation.map(d => ({
+    label: d.label, is_rest: d.is_rest,
+    exercises: d.exercises.map(e => ({ name: e.name, sets: e.sets, reps: e.reps })),
+  }));
+  _renderPlanBuilder(preset.name + " (Custom)");
+}
+
+async function saveCustomPlan() {
+  const name = document.getElementById("customPlanName").value.trim();
+  if (!name) { alert("Please enter a plan name."); return; }
+  if (!_planBuilderDays.length) { alert("Add at least one day."); return; }
+  for (const day of _planBuilderDays) {
+    if (!day.label.trim()) { alert("Every day needs a label."); return; }
+    if (!day.is_rest && !day.exercises.some(e => e.name.trim())) {
+      alert(`"${day.label}" needs at least one exercise.`); return;
+    }
+  }
+  const rotation = _planBuilderDays.map(d => ({
+    label: d.label.trim(),
+    is_rest: d.is_rest,
+    exercises: d.is_rest ? [] : d.exercises.filter(e => e.name.trim()).map(e => ({
+      name: e.name.trim(), exercise_type: "strength", sets: e.sets || 3, reps: e.reps || 10,
+    })),
+  }));
+  let result;
+  if (_editingPlanId) {
+    result = await api("PUT", `/plans/${_editingPlanId}`, { name, rotation });
+    if (result.error) { alert(result.error); return; }
+    showNotify("Plan updated!");
+    refreshCalendar();
+  } else {
+    result = await api("POST", "/plans", { name, rotation });
+    if (result.error) { alert(result.error); return; }
+    if (confirm("Plan created! Would you like to activate it now?")) {
+      await api("POST", "/calendar/activate", { plan_id: result.id });
+    }
+    refreshCalendar();
+  }
+}
+
+// --- UNDO SYSTEM (stack-based) ---
+// Entries are scoped. The toast covers every undoable action, but the calendar's
+// "Confirm/Discard Changes" buttons must only see calendar ones — otherwise deleting
+// a food made the calendar claim it had pending schedule changes, and discarding
+// them would silently restore the food.
+const UNDO_CALENDAR = "calendar";
+let undoStack = [];
+let undoTimer = null;
+
+function calendarPendingUndo() {
+  return undoStack.filter(e => e.scope === UNDO_CALENDAR);
+}
+
+function showUndo(message, action, scope) {
+  clearTimeout(undoTimer);
+  undoStack.push({ message, action, scope: scope || "general" });
+  const count = undoStack.length;
+  const label = count > 1 ? `${message} (+${count - 1} more)` : message;
+  document.getElementById("undoMsg").textContent = label;
+  document.getElementById("undoToast").classList.add("visible");
+  undoTimer = setTimeout(dismissUndo, 8000);
+}
+
+/** Point the toast at the newest remaining entry, or hide it if none are left. */
+function _syncUndoToast() {
+  const toast = document.getElementById("undoToast");
+  if (!undoStack.length) {
+    clearTimeout(undoTimer);
+    toast.classList.remove("visible");
+    return;
+  }
+  const top = undoStack[undoStack.length - 1];
+  const count = undoStack.length;
+  document.getElementById("undoMsg").textContent =
+    count > 1 ? `${top.message} (+${count - 1} more)` : top.message;
+  toast.classList.add("visible");
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(dismissUndo, 8000);
+}
+
+function dismissUndo() {
+  document.getElementById("undoToast").classList.remove("visible");
+  undoStack = [];
+}
+
+async function performUndo() {
+  if (!undoStack.length) return;
+  clearTimeout(undoTimer);
+  const entry = undoStack.pop();
+  await entry.action();
+  _syncUndoToast();
+  // Undoing a schedule change changes the calendar's pending count.
+  if (entry.scope === UNDO_CALENDAR) refreshCalendar();
+}
+
+// --- SAVED MEALS ---
+async function refreshSavedMeals() {
+  const meals = await api("GET", "/saved-meals");
+  const container = document.getElementById("savedMealsList");
+  if (!meals.length) {
+    container.innerHTML = '<div class="empty-slot" style="background:var(--surface);border-radius:var(--radius);padding:1rem;">No saved meals yet. Create one below!</div>';
+    return;
+  }
+  window._savedMealsCache = meals;
+  container.innerHTML = meals.map((m, idx) => {
+    const items = m.items || [];
+    const totalCal = items.reduce((s, i) => s + i.calories, 0);
+    const totalP = items.reduce((s, i) => s + i.protein_g, 0);
+    const totalC = items.reduce((s, i) => s + i.carbs_g, 0);
+    const totalF = items.reduce((s, i) => s + i.fat_g, 0);
+    return `<div class="saved-meal-card">
+      <div class="saved-meal-info">
+        <h4>${esc(m.name)}</h4>
+        <div class="saved-meal-items">${items.map(i => `${esc(i.food_name)} (${i.quantity_g}g)`).join(", ")}</div>
+        <div class="saved-meal-macros">
+          <span class="macro-pill cal">${Math.round(totalCal)} kcal</span>
+          <span class="macro-pill prot">P ${Math.round(totalP)}g</span>
+          <span class="macro-pill carb">C ${Math.round(totalC)}g</span>
+          <span class="macro-pill fat">F ${Math.round(totalF)}g</span>
+        </div>
+      </div>
+      <div class="saved-meal-actions">
+        <button class="btn-outline" style="font-size:0.82rem;" onclick="editSavedMeal(${idx})">Edit</button>
+        <button class="btn btn-danger" onclick="deleteSavedMeal(${idx})">Delete</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function quickLogMeal(mealId, mealTime) {
+  if (!mealTime) return;
+  const result = await api("POST", `/saved-meals/${mealId}/log`, { meal_time: mealTime });
+  if (result.status === "logged") {
+    showNotify(`Logged ${result.meal_name} (${result.food_count} items) for ${mealTime}.`);
+    refreshData();
+  }
+}
+
+let editingMealId = null;
+
+async function deleteSavedMeal(idx) {
+  const m = window._savedMealsCache[idx];
+  if (!m) return;
+  if (!confirm(`Delete "${m.name}"? This will remove the saved meal.`)) return;
+  const backup = JSON.parse(JSON.stringify(m));
+  await api("DELETE", `/saved-meals/${m.id}`);
+  refreshSavedMeals();
+  refreshSavedMealDropdown();
+  showUndo(`Deleted "${m.name}"`, async () => {
+    await api("POST", "/saved-meals", { name: backup.name, items: backup.items });
+    refreshSavedMeals();
+    refreshSavedMealDropdown();
+  });
+}
+
+function editSavedMeal(idx) {
+  const m = window._savedMealsCache[idx];
+  if (!m) return;
+  editingMealId = m.id;
+  document.getElementById("mealFormTitle").textContent = "Edit Meal";
+  document.getElementById("mealFormSubmitBtn").textContent = "Save Changes";
+  document.getElementById("mealFormCancelBtn").style.display = "inline-block";
+  document.getElementById("newMealName").value = m.name;
+  document.getElementById("ingredientRows").innerHTML = "";
+  for (const item of m.items) {
+    addIngredientRow({
+      name: item.food_name,
+      serving_grams: item.quantity_g,
+      calories: item.calories,
+      protein_g: item.protein_g,
+      carbs_g: item.carbs_g,
+      fat_g: item.fat_g,
+    });
+  }
+  document.getElementById("createMealForm").scrollIntoView({ behavior: "smooth" });
+}
+
+function cancelMealEdit() {
+  editingMealId = null;
+  document.getElementById("mealFormTitle").textContent = "Create Meal";
+  document.getElementById("mealFormSubmitBtn").textContent = "Save Meal";
+  document.getElementById("mealFormCancelBtn").style.display = "none";
+  document.getElementById("newMealName").value = "";
+  document.getElementById("ingredientRows").innerHTML = "";
+  document.getElementById("ingredientHeader").style.display = "none";
+}
+
+function addIngredientRow(food) {
+  const container = document.getElementById("ingredientRows");
+  document.getElementById("ingredientHeader").style.display = "flex";
+  const row = document.createElement("div");
+  row.className = "ingredient-row";
+  const fn = food ? food.name : "";
+  const fg = food ? food.serving_grams : "";
+  const fc = food ? food.calories : "";
+  const fp = food ? food.protein_g : "";
+  const fca = food ? food.carbs_g : "";
+  const ff = food ? food.fat_g : "";
+  row.innerHTML = `
+    <div class="search-wrap">
+      <input class="ing-name" placeholder="Search..." value="${esc(fn)}" oninput="searchFoodKB(this)">
+      <div class="search-results" style="display:none;"></div>
+    </div>
+    <input class="ing-qty narrow" type="number" placeholder="0" value="${fg}" min="0" oninput="recalcIngredient(this)">
+    <input class="ing-cal narrow" type="number" placeholder="0" value="${fc}" min="0">
+    <input class="ing-prot narrow" type="number" placeholder="0" value="${fp}" min="0">
+    <input class="ing-carb narrow" type="number" placeholder="0" value="${fca}" min="0">
+    <input class="ing-fat narrow" type="number" placeholder="0" value="${ff}" min="0">
+    <button class="btn btn-danger" onclick="removeIngredientRow(this)" style="padding:0.3rem 0.5rem;">x</button>
+  `;
+  container.appendChild(row);
+  row._baseServing = food ? food.serving_grams : 0;
+  row._baseCal = food ? food.calories : 0;
+  row._baseProt = food ? food.protein_g : 0;
+  row._baseCarb = food ? food.carbs_g : 0;
+  row._baseFat = food ? food.fat_g : 0;
+}
+
+function removeIngredientRow(btn) {
+  btn.parentElement.remove();
+  if (!document.querySelectorAll("#ingredientRows .ingredient-row").length) {
+    document.getElementById("ingredientHeader").style.display = "none";
+  }
+}
+
+function recalcIngredient(qtyInput) {
+  const row = qtyInput.closest(".ingredient-row");
+  if (!row._baseServing) return;
+  const ratio = parseFloat(qtyInput.value) / row._baseServing;
+  if (!isFinite(ratio)) return;
+  row.querySelector(".ing-cal").value = Math.round(row._baseCal * ratio);
+  row.querySelector(".ing-prot").value = Math.round(row._baseProt * ratio * 10) / 10;
+  row.querySelector(".ing-carb").value = Math.round(row._baseCarb * ratio * 10) / 10;
+  row.querySelector(".ing-fat").value = Math.round(row._baseFat * ratio * 10) / 10;
+}
+
+let searchTimeout = null;
+async function searchFoodKB(input) {
+  clearTimeout(searchTimeout);
+  const wrap = input.closest(".search-wrap");
+  const dropdown = wrap.querySelector(".search-results");
+  const q = input.value.trim();
+  if (q.length < 2) { dropdown.style.display = "none"; return; }
+  searchTimeout = setTimeout(async () => {
+    const results = await api("GET", "/food-search?q=" + encodeURIComponent(q));
+    if (!results.length) { dropdown.style.display = "none"; return; }
+    dropdown.innerHTML = results.map(r =>
+      `<div data-food='${JSON.stringify(r).replace(/'/g, "&#39;")}'>${esc(r.name)} <span style="color:var(--text2);font-size:0.75rem;">${Math.round(r.calories)} kcal/${r.serving_grams}g</span></div>`
+    ).join("");
+    dropdown.style.display = "block";
+    dropdown.querySelectorAll("div").forEach(d => {
+      d.addEventListener("click", () => {
+        const food = JSON.parse(d.dataset.food);
+        const row = wrap.closest(".ingredient-row");
+        row.querySelector(".ing-name").value = food.name;
+        row.querySelector(".ing-qty").value = food.serving_grams;
+        row.querySelector(".ing-cal").value = Math.round(food.calories);
+        row.querySelector(".ing-prot").value = food.protein_g;
+        row.querySelector(".ing-carb").value = food.carbs_g;
+        row.querySelector(".ing-fat").value = food.fat_g;
+        row._baseServing = food.serving_grams;
+        row._baseCal = food.calories;
+        row._baseProt = food.protein_g;
+        row._baseCarb = food.carbs_g;
+        row._baseFat = food.fat_g;
+        dropdown.style.display = "none";
+      });
+    });
+  }, 250);
+}
+
+async function saveMeal() {
+  const name = document.getElementById("newMealName").value.trim();
+  if (!name) return;
+  const rows = document.querySelectorAll("#ingredientRows .ingredient-row");
+  const items = [];
+  rows.forEach(row => {
+    const fn = row.querySelector(".ing-name").value.trim();
+    if (!fn) return;
+    items.push({
+      food_name: fn,
+      quantity_g: parseFloat(row.querySelector(".ing-qty").value) || 0,
+      calories: parseFloat(row.querySelector(".ing-cal").value) || 0,
+      protein_g: parseFloat(row.querySelector(".ing-prot").value) || 0,
+      carbs_g: parseFloat(row.querySelector(".ing-carb").value) || 0,
+      fat_g: parseFloat(row.querySelector(".ing-fat").value) || 0,
+    });
+  });
+  if (!items.length) return;
+  if (editingMealId) {
+    await api("PUT", `/saved-meals/${editingMealId}`, { name, items });
+    showNotify(`Updated saved meal "${name}".`);
+    cancelMealEdit();
+  } else {
+    await api("POST", "/saved-meals", { name, items });
+    showNotify(`Created saved meal "${name}".`);
+    document.getElementById("newMealName").value = "";
+    document.getElementById("ingredientRows").innerHTML = "";
+  }
+  refreshSavedMeals();
+  refreshSavedMealDropdown();
+}
+
+document.addEventListener("click", e => {
+  document.querySelectorAll(".search-results").forEach(d => {
+    if (d.style.display === "block" && !d.contains(e.target) && !e.target.closest(".search-wrap")) {
+      d.style.display = "none";
+    }
+  });
+});
+
+// --- MANUAL FOOD LOG ---
+let manualFoodBase = {};
+let selectedFood = null;
+
+function _renderFoodDropdown(results) {
+  const dropdown = document.getElementById("manualFoodResults");
+  if (!results.length) {
+    dropdown.innerHTML = '<div style="color:var(--text2);padding:0.3rem 0.5rem;font-size:0.8rem">No results — <a href="#" onclick="showCustomFoodForm(); return false;" style="color:var(--primary)">enter manually</a></div>';
+    dropdown.style.display = "block";
+    return;
+  }
+  dropdown.innerHTML = results.map(r =>
+    `<div data-food='${JSON.stringify(r).replace(/'/g, "&#39;")}' style="cursor:pointer;padding:0.4rem 0.5rem;border-bottom:1px solid var(--border,#e2e4ed);">
+      <div style="font-weight:500;">${esc(r.name)}</div>
+      <div style="font-size:0.75rem;color:var(--text2)">${Math.round(r.calories)} kcal per ${r.serving_grams}g serving &middot; P:${Math.round(r.protein_g)}g C:${Math.round(r.carbs_g)}g F:${Math.round(r.fat_g)}g</div>
+    </div>`
+  ).join("");
+  dropdown.style.display = "block";
+  dropdown.querySelectorAll("div[data-food]").forEach(d => {
+    d.addEventListener("click", () => selectKBFood(JSON.parse(d.dataset.food)));
+  });
+}
+
+async function showFoodKBBrowse() {
+  const dropdown = document.getElementById("manualFoodResults");
+  if (dropdown.style.display === "block") return;
+  const q = document.getElementById("manualFoodName").value.trim();
+  const results = await api("GET", "/food-search?q=" + encodeURIComponent(q));
+  _renderFoodDropdown(results);
+}
+
+function searchFoodKBManual(input) {
+  clearTimeout(searchTimeout);
+  const dropdown = document.getElementById("manualFoodResults");
+  searchTimeout = setTimeout(async () => {
+    const q = input.value.trim();
+    const results = await api("GET", "/food-search?q=" + encodeURIComponent(q));
+    _renderFoodDropdown(results);
+  }, 200);
+}
+
+function selectKBFood(food) {
+  selectedFood = food;
+  manualFoodBase = { serving: food.serving_grams, su: food.serving_unit || "serving", cal: food.calories, prot: food.protein_g, carb: food.carbs_g, fat: food.fat_g };
+  document.getElementById("manualFoodResults").style.display = "none";
+  document.getElementById("foodSearchStep").style.display = "none";
+  document.getElementById("foodDetailStep").style.display = "block";
+  document.getElementById("selectedFoodTitle").textContent = food.name;
+  const unitLabel = food.serving_unit && food.serving_unit !== "serving" ? `1 ${food.serving_unit} = ${food.serving_grams}g` : `${food.serving_grams}g`;
+  document.getElementById("foodDetailInfo").textContent =
+    `Per serving (${unitLabel}): ${Math.round(food.calories)} kcal · P:${Math.round(food.protein_g)}g · C:${Math.round(food.carbs_g)}g · F:${Math.round(food.fat_g)}g`;
+  const unitSel = document.getElementById("manualFoodUnit");
+  unitSel.innerHTML = '<option value="g">grams</option><option value="oz">oz</option><option value="serving">servings</option>';
+  if (food.serving_unit && !["g","oz","serving"].includes(food.serving_unit)) {
+    unitSel.innerHTML += `<option value="${esc(food.serving_unit)}">${esc(food.serving_unit)}s</option>`;
+  }
+  document.getElementById("manualFoodQty").value = 1;
+  unitSel.value = "serving";
+  recalcManualFood();
+}
+
+function recalcManualFood() {
+  if (!manualFoodBase.serving) return;
+  const qty = parseFloat(document.getElementById("manualFoodQty").value) || 0;
+  const unit = document.getElementById("manualFoodUnit").value;
+  let servings;
+  if (unit === "serving" || unit === "piece") servings = qty;
+  else if (unit === "g") servings = manualFoodBase.serving ? qty / manualFoodBase.serving : 0;
+  else if (unit === "oz") servings = manualFoodBase.serving ? (qty * 28.3495) / manualFoodBase.serving : 0;
+  else if (unit === manualFoodBase.su) servings = qty;
+  else servings = manualFoodBase.serving ? qty / manualFoodBase.serving : 0;
+  const cal = Math.round(manualFoodBase.cal * servings);
+  const prot = Math.round(manualFoodBase.prot * servings * 10) / 10;
+  const carb = Math.round(manualFoodBase.carb * servings * 10) / 10;
+  const fat = Math.round(manualFoodBase.fat * servings * 10) / 10;
+  document.getElementById("foodNutritionPreview").innerHTML = `
+    <span class="macro-pill cal">${cal} kcal</span>
+    <span class="macro-pill prot">P ${prot}g</span>
+    <span class="macro-pill carb">C ${carb}g</span>
+    <span class="macro-pill fat">F ${fat}g</span>
+  `;
+  selectedFood._computed = { cal, prot, carb, fat };
+}
+
+function backToSearch() {
+  document.getElementById("foodSearchStep").style.display = "block";
+  document.getElementById("foodDetailStep").style.display = "none";
+  document.getElementById("customFoodStep").style.display = "none";
+  selectedFood = null;
+}
+
+function showCustomFoodForm() {
+  document.getElementById("manualFoodResults").style.display = "none";
+  document.getElementById("foodSearchStep").style.display = "none";
+  document.getElementById("customFoodStep").style.display = "block";
+}
+
+async function logManualFood() {
+  if (!selectedFood || !selectedFood._computed) return;
+  const c = selectedFood._computed;
+  const body = {
+    name: selectedFood.name,
+    meal_time: document.getElementById("manualFoodSlot").value,
+    quantity_amount: parseFloat(document.getElementById("manualFoodQty").value) || 0,
+    quantity_unit: document.getElementById("manualFoodUnit").value,
+    calories: c.cal,
+    protein_g: c.prot,
+    carbs_g: c.carb,
+    fat_g: c.fat,
+  };
+  const result = await api("POST", "/log/food", body);
+  if (result.status === "logged") {
+    showNotify(`Logged ${result.food_name} for ${body.meal_time}.`);
+    backToSearch();
+    document.getElementById("manualFoodName").value = "";
+    refreshData();
+  }
+}
+
+async function logCustomFood() {
+  const name = document.getElementById("customFoodName").value.trim();
+  if (!name) return;
+  const body = {
+    name,
+    meal_time: document.getElementById("customFoodSlot").value,
+    quantity_amount: parseFloat(document.getElementById("customFoodQty").value) || 0,
+    quantity_unit: "g",
+    calories: parseFloat(document.getElementById("customFoodCal").value) || 0,
+    protein_g: parseFloat(document.getElementById("customFoodProt").value) || 0,
+    carbs_g: parseFloat(document.getElementById("customFoodCarb").value) || 0,
+    fat_g: parseFloat(document.getElementById("customFoodFat").value) || 0,
+  };
+  const result = await api("POST", "/log/food", body);
+  if (result.status === "logged") {
+    showNotify(`Logged ${result.food_name} for ${body.meal_time}.`);
+    backToSearch();
+    document.getElementById("customFoodName").value = "";
+    document.getElementById("customFoodQty").value = "";
+    document.getElementById("customFoodCal").value = "";
+    document.getElementById("customFoodProt").value = "";
+    document.getElementById("customFoodCarb").value = "";
+    document.getElementById("customFoodFat").value = "";
+    refreshData();
+  }
+}
+
+async function refreshSavedMealDropdown() {
+  const meals = await api("GET", "/saved-meals");
+  const select = document.getElementById("savedMealSelect");
+  select.innerHTML = '<option value="">Or log a saved meal...</option>' +
+    meals.map(m => `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join("");
+}
+
+async function logSelectedSavedMeal() {
+  const mealId = document.getElementById("savedMealSelect").value;
+  if (!mealId) return;
+  const slot = document.getElementById("savedMealSlot").value;
+  const result = await api("POST", `/saved-meals/${mealId}/log`, { meal_time: slot });
+  if (result.status === "logged") {
+    showNotify(`Logged ${result.meal_name} (${result.food_count} items) for ${slot}.`);
+    document.getElementById("savedMealSelect").selectedIndex = 0;
+    refreshData();
+  }
+}
+
+// --- AI PANEL ---
+function addAiMsg(cls, text) {
+  const container = document.getElementById("aiMessages");
+  const div = document.createElement("div");
+  div.className = "ai-msg ai-msg-" + cls;
+  div.textContent = text;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function setThinking(on) {
+  aiThinking = on;
+  const el = document.getElementById("aiThinking");
+  if (on) {
+    el.classList.add("visible");
+    document.getElementById("aiMessages").scrollTop = document.getElementById("aiMessages").scrollHeight;
+  } else {
+    el.classList.remove("visible");
+  }
+}
+
+document.getElementById("aiForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = document.getElementById("aiInput");
+  const text = input.value.trim();
+  if (!text || aiThinking) return;
+  addAiMsg("user", text);
+  input.value = "";
+  setThinking(true);
+  try {
+    const data = await sendMessage(text, chatContext);
+    setThinking(false);
+    addAiMsg("bot", data.message);
+    if (data.notes && data.notes.length) {
+      data.notes.forEach(n => addAiMsg("note", n));
+    }
+    chatContext = data.context;
+    if (data.status === "logged") {
+      chatContext = null;
+      refreshData();
+      refreshExercises();
+      refreshCalendar();
+    }
+  } catch (err) {
+    setThinking(false);
+    console.error("Message failed:", err);
+    // Never surface raw exception text; always say what it means for the user.
+    let msg;
+    if (err instanceof OfflineError) {
+      msg = "Couldn't log that — can't reach the server. Try again once you're reconnected.";
+    } else if (err instanceof ServerError) {
+      msg = "Couldn't log that — the server hit an error. Please try again.";
+    } else {
+      msg = "Couldn't log that — something went wrong. Please try again.";
+    }
+    addAiMsg("note", msg);
+  }
+});
+
+document.getElementById("aiInput").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById("aiForm").requestSubmit();
+  }
+});
+
+// Init — restore last active page
+const savedPage = localStorage.getItem("fittrack_page");
+if (savedPage && document.getElementById("page-" + savedPage)) {
+  switchToPage(savedPage);
+}
+loadProfile().then(() => refreshData());
+
+async function checkAiStatus() {
+  try {
+    const data = await api("GET", "/ai-status");
+    const dot = document.querySelector(".ai-panel-dot");
+    if (data.connected) {
+      dot.classList.add("connected");
+      dot.dataset.tooltip = "AI assistant working";
+    } else {
+      dot.classList.remove("connected");
+      dot.dataset.tooltip = "AI Assistant Unavailable";
+    }
+  } catch {}
+}
+checkAiStatus();
+initOverscrollBounce();
+resetSetList([]);
+loadWeightUnit();
+
+// AI dot hover tooltip
+(function() {
+  const dot = document.querySelector(".ai-panel-dot");
+  const tip = document.createElement("div");
+  tip.className = "ai-tooltip";
+  document.body.appendChild(tip);
+  dot.addEventListener("mouseenter", () => {
+    const r = dot.getBoundingClientRect();
+    tip.textContent = dot.dataset.tooltip;
+    tip.style.left = (r.left + r.width / 2) + "px";
+    tip.style.top = (r.bottom + 6) + "px";
+    tip.style.transform = "translateX(-50%)";
+    tip.classList.add("visible");
+  });
+  dot.addEventListener("mouseleave", () => tip.classList.remove("visible"));
+})();
+
+// --- MOBILE NAVIGATION ---
+function switchMobileTab(tab) {
+  closeMobilePanels();
+  switchToPage(tab);
+  document.querySelectorAll('.mobile-bottom-bar .tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+}
+
+function toggleMobileChatSheet() {
+  const panel = document.querySelector('.ai-panel');
+  const backdrop = document.querySelector('.mobile-backdrop');
+  const fab = document.querySelector('.mobile-chat-fab');
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open');
+    backdrop.classList.remove('visible');
+    if (fab) fab.classList.remove('hidden');
+  } else {
+    closeMobilePanels();
+    panel.classList.add('open');
+    backdrop.classList.add('visible');
+    if (fab) fab.classList.add('hidden');
+    setTimeout(() => document.getElementById('aiInput').focus(), 300);
+  }
+}
+
+function openMobileSettings() {
+  const menu = document.getElementById('mobileSettingsMenu');
+  if (menu.classList.contains('visible')) {
+    menu.classList.remove('visible');
+    return;
+  }
+  closeMobilePanels();
+  menu.classList.add('visible');
+}
+function mobileSettingsGo(page) {
+  document.getElementById('mobileSettingsMenu').classList.remove('visible');
+  switchToPage(page);
+  document.querySelectorAll('.mobile-bottom-bar .tab-btn').forEach(b => b.classList.remove('active'));
+}
+
+function closeMobilePanels() {
+  document.querySelector('.ai-panel').classList.remove('open');
+  document.querySelector('.mobile-backdrop').classList.remove('visible');
+  const m = document.getElementById('mobileSettingsMenu');
+  if (m) m.classList.remove('visible');
+  const fab = document.querySelector('.mobile-chat-fab');
+  if (fab) fab.classList.remove('hidden');
+}
+
+// Close settings menu on outside tap
+document.addEventListener('click', e => {
+  const menu = document.getElementById('mobileSettingsMenu');
+  if (!menu || !menu.classList.contains('visible')) return;
+  const gear = document.querySelector('.mobile-header button');
+  if (!menu.contains(e.target) && !gear.contains(e.target)) menu.classList.remove('visible');
+});
+
+// Sync bottom tab bar highlight when page changes via desktop nav
+document.querySelectorAll('nav a').forEach(a => {
+  a.addEventListener('click', () => {
+    if (window.innerWidth <= 768) {
+      closeMobilePanels();
+      const pg = a.dataset.page;
+      document.querySelectorAll('.mobile-bottom-bar .tab-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.tab === pg);
+      });
+    }
+  });
+});
+
+// Register service worker for PWA / offline shell caching
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js', { scope: '/static/' })
+    .catch(() => {});
+}
+</script>
+</body>
+</html>

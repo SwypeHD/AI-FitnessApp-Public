@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Trust the bundled FitTrack CA in addition to the system roots.
+
+  Android stopped trusting user-installed CAs in apps as of API 24, so shipping the
+  certificate with the app is what makes LAN HTTPS work without asking the user to
+  install anything on the phone. It's also narrower than a user-installed CA, which
+  would be trusted by every app: this one is trusted only here.
+
+  Cleartext stays permitted so the app still works against a plain-HTTP server —
+  useful before certificates are set up, or if the server moves.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="@raw/fittrack_ca" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

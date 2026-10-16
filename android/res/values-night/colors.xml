@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches the web app's dark theme so the system chrome doesn't clash. -->
+    <color name="status_bar">#1c1917</color>
+    <color name="window_bg">#1c1917</color>
+    <color name="ic_launcher_background">#4338ca</color>
+</resources>
